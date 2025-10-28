@@ -243,3 +243,7 @@ INSERT INTO alerts (project_id, aoi_fk_id, algo_fk_id, message) VALUES (37, 17, 
 
 ```
 
+https://docs.google.com/document/d/1l-ZPJcTxA3AQtHbtxo4dWeC2cAn43YtrqvzBWx5-wlQ/edit?usp=sharing
+
+https://docs.google.com/document/d/1r9Mm2we47yvmU7ruuzOqMgFe-dshgLGXAzVmrRvLl5s/edit?usp=sharing
+
