@@ -1,247 +1,245 @@
-🛰️ Gadura V1: Geospatial Project Manager (Class-Oriented Full Stack)
+# 🛰️ Gadura V1: Geospatial Project Manager (Class-Oriented Full Stack)
 
-Gadura V1 is a full-stack, class-oriented application built with Vue 3 (Frontend) and Node/TypeScript (Backend) that allows users to define geospatial projects, manage Areas of Interest (AOIs) using PostGIS, configure surveillance algorithms, and manage project collaborators.
+Gadura V1 is a **full-stack, class-oriented application** built with Vue 3 (Frontend) and Node/TypeScript (Backend) that allows users to define geospatial projects, manage Areas of Interest (AOIs) using PostGIS, and delivers **real-time alerts** via Change Data Capture (CDC).
 
-This document details the project architecture, prerequisites, setup, and database schema.
+This document details the project architecture, prerequisites, setup, and execution steps for the **complete CDC pipeline**.
 
-🏛️ 1. Architecture Overview (Class-Oriented)
+---
 
-The project is built on a strict Object-Oriented paradigm across the stack, leveraging dedicated classes for data modeling, service logic, and UI state management.
+## 🏛️ 1. Architecture Overview (CDC Pipeline)
 
-Layer
+The project utilizes a five-layer real-time data pipeline. It specifically captures **inserts** into the `alerts` table and pushes them directly to the logged-in user's browser for instant notification.
 
-Technology
+| Layer | Technology | Key Role |
+| :--- | :--- | :--- |
+| **Database** | PostgreSQL + PostGIS | Canonical data storage. The **`alerts` table** is the data source. |
+| **CDC Connector** | **Debezium (Postgres Connector)** | Captures changes from PostgreSQL's WAL and publishes events to Kafka. |
+| **Message Broker** | **Apache Kafka (KRaft)** | Highly available message queue for the CDC stream (`dbserver1.public.alerts` topic). |
+| **Alert Service** | **Node.js/KafkaJS/Redis** | Consumes the Kafka stream, fetches recipient user IDs, saves missed alerts to **Redis**, and streams live alerts via Server-Sent Events (SSE). |
+| **Frontend** | Vue 3 + SSE | Establishes an SSE connection to the Node.js backend for instant, real-time user notification. |
 
-Key Classes & Role
+---
 
-Database
+## ⚙️ 2. Prerequisites & Installation
 
-PostgreSQL + PostGIS
+The setup requires five core infrastructure components. All commands provided are for a Unix-like environment (Linux/Mac with Homebrew).
 
-Canonical data storage for complex geospatial types.
+### A. Core System Dependencies
 
-Backend (API)
+Ensure the following dependencies are installed before proceeding with the CDC pipeline setup.
 
-Node.js + Express (TypeScript)
+| Dependency | Purpose | Installation Command (Linux/Mac) |
+| :--- | :--- | :--- |
+| **JDK 21** | Required for Kafka and Debezium. | `sudo apt install -y openjdk-21-jdk` **OR** `brew install openjdk@21` |
+| **Node.js & npm** | Required for Backend/Frontend. | `nvm install --lts` (or standard installation) |
+| **PostgreSQL & PostGIS** | Geospatial data storage and CDC source. | `sudo apt install postgresql postgresql-contrib postgis` |
+| **Redis Server** | Cache for user alerts when offline. | `sudo apt install redis-server` **OR** `brew install redis` |
 
-App, DBClient (Singleton), AuthController, ProjectController (Routing), ProjectService (Transactional Logic).
+> **Verification:** Ensure Node, Java, and Postgres are correctly installed and available in your environment's PATH.
 
-Backend Models
+### B. Database Setup (Schema & Logical Replication)
 
-TypeScript Classes
+This section covers setting up the database and preparing it for Change Data Capture using PostgreSQL's **Logical Replication**. The process uses a **database schema dump file** for quick setup.
 
-ProjectModel, AreaOfInterestModel, AlgorithmCatalogueModel, etc. (Handle DB CRUD).
+1.  **Create Database Schema**
+    *The `garuda_v1_schema_dump.sql` file must be available in the root folder of your project.*
 
-Frontend (UI)
+    ```bash
+    # 1. Create the database user and database
+    sudo -i -u postgres
+    createuser --interactive # Use: garuda_user, password: Minar@123
+    createdb -O garuda_user garuda_v1_db
+    \q
+    exit
 
-Vue 3 + Pinia (TypeScript)
-
-Vue Components act as UI Classes (HomeViewUI, ConfigureProjectUI).
-
-Frontend Classes
-
-TypeScript Classes
-
-UserSession (Login state), ApiClient (Singleton), ProjectFormData (4-step form object), AreaOfInterestDraft (AOI creation manager).
-
-⚙️ 2. Prerequisites & Installation
-
-A. System Prerequisites (Ubuntu)
-
-Node.js & npm: (Use nvm recommended)
-
-nvm install --lts
-nvm use --lts
-
-
-PostgreSQL & PostGIS: (Essential for geospatial data)
-
-sudo apt update
-sudo apt install postgresql postgresql-contrib postgis
-
-
-B. Database Setup
-
-Create the database and user, and enable the PostGIS extension.
-
-Create User & Database:
-
-sudo -i -u postgres
-# Create the user (replace with a strong password)
-createuser --interactive
-# (Enter gadura_user, say NO to superuser, YES to createdb)
-psql
-ALTER USER garuda_user WITH ENCRYPTED PASSWORD 'your_strong_password';
-\q
-# Create the database owned by the new user
-createdb -O garuda_user garuda_v1_db
-exit
-
-
-Enable PostGIS Extension:
-
-psql -U gadura_user -d gadura_v1_db
-gadura_v1_db=> CREATE EXTENSION postgis;
-gadura_v1_db=> \q
-
-
-C. Project Setup
-
-Project Structure: Assume the repository contains two root folders: backend/ and frontend/.
-
-Backend Setup (backend/):
-
-cd backend
-npm install
-# Create .env file with DB credentials (see Section 3.1)
-
-
-Frontend Setup (frontend/):
-
-cd frontend
-npm install
-
-
-3. 🚀 Running the Application
-
-3.1 Backend Configuration (backend/.env)
-
-Create this file in the backend/ root directory:
-
-# Server Configuration
-PORT=3000
-
-# Database Configuration
-DB_USER=gadura_user
-DB_HOST=localhost
-DB_DATABASE=gadura_v1_db
-DB_PASSWORD=your_strong_password
-DB_PORT=5432
-
-
-3.2 Start Servers
-
-Start Backend (Terminal 1):
-
-cd backend
-npm run start
-# Should show: ⚡️ Gadura V1 Server running on http://localhost:3000
-
-
-Start Frontend (Terminal 2):
-
-cd frontend
-npm run dev
-# Should open the application in your browser (e.g., http://localhost:5173)
-
-
-Login Credentials (Mock): Username: testuser | Password: pass
-
-🗄️ 4. Database Schema (PSQL Dump Equivalent)
-
-The tables below define the structure of the gadura_v1_db and include foreign keys (FK) and the critical PostGIS geometry type (GEOMETRY(POLYGON, 4326)).
-
-A. Schema Definition
-
--- 1. Project Table (Parent Table)
-CREATE TABLE project (
-    id SERIAL NOT NULL,
-    project_name TEXT NOT NULL,
-    description TEXT,
-    creation_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    last_modified_date TIMESTAMP WITH TIME ZONE,
-    created_by_userid TEXT NOT NULL,
-    auxdata JSONB, -- Custom key-value pairs
-    CONSTRAINT pkey_project PRIMARY KEY (id)
-);
-
--- 2. Algorithm Catalogue (Read-Only)
-CREATE TABLE algorithm_catalogue (
-    id SERIAL NOT NULL,
-    algo_id TEXT UNIQUE NOT NULL, -- Human-readable unique ID (e.g., 'Sentinel1_Change')
-    args JSONB,
-    description TEXT,
-    category TEXT,
-    CONSTRAINT pkey_algo PRIMARY KEY (id)
-);
-
--- 3. Area of Interest (Geospatial Data)
-CREATE TABLE area_of_interest (
-    id SERIAL NOT NULL,
-    project_id INTEGER NOT NULL,
-    aoi_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    geom GEOMETRY(POLYGON, 4326) NOT NULL, -- PostGIS Geometry (WGS84)
-    auxdata JSONB,
-    publish_flag BOOLEAN NOT NULL DEFAULT true,
-    geom_properties JSONB,
-    CONSTRAINT pkey_aoi PRIMARY KEY (id),
-    CONSTRAINT unique_aoi_in_project UNIQUE (project_id, aoi_id),
-    CONSTRAINT fkey_aoi_project_id FOREIGN KEY (project_id)
-        REFERENCES public.project (id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
--- 4. AOI to Algorithm Mapping (Many-to-Many Junction Table)
-CREATE TABLE aoi_algorithm_mapping (
-    id SERIAL NOT NULL,
-    aoi_id INTEGER NOT NULL, -- FK to area_of_interest.id
-    algo_id INTEGER NOT NULL, -- FK to algorithm_catalogue.id
-    config_args JSONB, -- Specific run parameters for this pair
-    CONSTRAINT pkey_aoi_algo_map PRIMARY KEY (id),
-    CONSTRAINT unique_aoi_algo UNIQUE (aoi_id, algo_id),
-    CONSTRAINT fkey_mapping_aoi FOREIGN KEY (aoi_id)
-        REFERENCES public.area_of_interest (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fkey_mapping_algo FOREIGN KEY (algo_id)
-        REFERENCES public.algorithm_catalogue (id) ON UPDATE CASCADE ON DELETE RESTRICT
-);
-
--- 5. Users to Project (Project Roles)
-CREATE TABLE users_to_project (
-    id SERIAL NOT NULL,
-    user_id TEXT NOT NULL,
-    project_id INTEGER NOT NULL,
-    role TEXT NOT NULL,
-    CONSTRAINT pkey_users_to_project PRIMARY KEY (id),
-    CONSTRAINT unique_user_project UNIQUE (user_id, project_id),
-    CONSTRAINT fkey_user_project_id FOREIGN KEY (project_id)
-        REFERENCES public.project (id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
--- 6. Alerts Log
-CREATE TABLE alerts (
-    id SERIAL NOT NULL,
-    project_id INTEGER NOT NULL,
-    aoi_fk_id INTEGER NOT NULL, -- FK to area_of_interest.id
-    algo_fk_id INTEGER NOT NULL, -- FK to algorithm_catalogue.id
-    message JSONB NOT NULL,
-    alert_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pkey_alerts PRIMARY KEY (id),
-    CONSTRAINT fkey_alert_project_id FOREIGN KEY (project_id)
-        REFERENCES public.project (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fkey_alert_aoi FOREIGN KEY (aoi_fk_id)
-        REFERENCES public.area_of_interest (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fkey_alert_algo FOREIGN KEY (algo_fk_id)
-        REFERENCES public.algorithm_catalogue (id) ON UPDATE CASCADE ON DELETE RESTRICT
-);
-
-
-7. CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT NOT NULL UNIQUE, -- Primary identifier (e.g., email or unique string)
-    username TEXT,
-    password_hash TEXT,
-    CONSTRAINT pkey_user PRIMARY KEY (user_id)
-);
-
-
-B. Initial Seed Data (Algorithms)
-
-To test Step 3 of the project creation wizard:
-
+    # 2. Enable PostGIS
+    psql -U garuda_user -d garuda_v1_db -h localhost
+    CREATE EXTENSION postgis;
+    \q
+
+    # 3. Restore the schema structure from the dump file
+    psql -U garuda_user -d garuda_v1_db -h localhost < garuda_v1_schema_dump.sql
+    ```
+
+2.  **Enable Logical Replication (CDC Configuration)**
+
+    Edit the PostgreSQL configuration file (e.g., `/etc/postgresql/16/main/postgresql.conf`) and ensure these settings are active:
+
+    ```ini
+    wal_level = logical
+    max_replication_slots = 10
+    max_wal_senders = 10
+    listen_addresses = '*'
+    ```
+
+3.  **Apply REPLICA IDENTITY and Publication**
+
+    These steps are crucial for Debezium to correctly capture changes from the `alerts` table. Connect to your DB and run:
+
+    ```sql
+    psql -U garuda_user -d garuda_v1_db -h localhost
+    ALTER TABLE alerts REPLICA IDENTITY FULL;
+    CREATE PUBLICATION debezium_pub1 FOR TABLE alerts;
+    \q
+    ```
+
+4.  **Restart PostgreSQL:**
+    ```bash
+    sudo systemctl restart postgresql
+    # OR (for Homebrew on Mac)
+    # brew services restart postgresql@16
+    ```
+
+### C. Kafka and Debezium Setup
+
+We will use **Kafka in KRaft mode** for simplicity and performance.
+
+1.  **Install Kafka (KRaft Mode)**
+
+    ```bash
+    cd ~
+    # Using Kafka version 4.1.0 (compatible with the project setup)
+    wget [https://archive.apache.org/dist/kafka/4.1.0/kafka_2.13-4.1.0.tgz](https://archive.apache.org/dist/kafka/4.1.0/kafka_2.13-4.1.0.tgz)
+    tar -xvzf kafka_2.13-4.1.0.tgz
+    mv kafka_2.13-4.1.0 kafka
+    mkdir -p ~/kafka/plugins 
+    ```
+
+2.  **Format KRaft Storage**
+
+    ```bash
+    rm -rf /tmp/kraft-combined-logs
+    KAFKA_CLUSTER_ID="$(~/kafka/bin/kafka-storage.sh random-uuid)"
+    ~/kafka/bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c ~/kafka/config/kraft-broker.properties
+    ```
+
+3.  **Install Debezium Connector (Postgres)**
+
+    ```bash
+    cd ~
+    # Using Debezium version 2.6.1.Final
+    wget [https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.6.1.Final/debezium-connector-postgres-2.6.1.Final-plugin.tar.gz](https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.6.1.Final/debezium-connector-postgres-2.6.1.Final-plugin.tar.gz)
+    tar -xvzf debezium-connector-postgres-2.6.1.Final-plugin.tar.gz
+    # Move the extracted connector plugin into Kafka's plugins folder
+    mv debezium-connector-postgres ~/kafka/plugins/
+    rm debezium-connector-postgres-2.6.1.Final-plugin.tar.gz
+    ```
+
+4.  **Configure Connector Files**
+
+    Create the following two configuration files inside `~/kafka/config/`:
+
+    **a) `connect-standalone.properties`**
+    
+    ```ini
+    bootstrap.servers=localhost:9092
+    key.converter=org.apache.kafka.connect.json.JsonConverter
+    value.converter=org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable=false
+    value.converter.schemas.enable=false
+    offset.storage.file.filename=/tmp/connect.offsets
+    offset.flush.interval.ms=10000
+    # IMPORTANT: Update this path to your absolute home directory path!
+    plugin.path=/home/YOUR_USER_NAME/kafka/plugins 
+    ```
+
+    **b) `register-postgres.properties` (Debezium Connector Configuration)**
+
+    ```ini
+    name=garuda-alerts-connector
+    connector.class=io.debezium.connector.postgresql.PostgresConnector
+    plugin.name=pgoutput
+    database.hostname=localhost
+    database.port=5432
+    database.user=garuda_user
+    database.password=Minar@123
+    database.dbname=garuda_v1_db
+    database.server.name=dbserver1
+    topic.prefix=dbserver1
+    slot.name=debezium_slot1
+    publication.name=debezium_pub1
+    snapshot.mode=initial
+    table.include.list=public.alerts
+    key.converter=org.apache.kafka.connect.json.JsonConverter
+    value.converter=org.apache.kafka.connect.json.JsonConverter
+    tombstones.on.delete=false
+    ```
+
+### D. Project Setup & Vite Proxy
+
+1.  **Install Dependencies:**
+
+    ```bash
+    cd garuda_app_v1/backend && npm install
+    cd ../frontend && npm install
+    ```
+
+2.  **Frontend Proxy (For Local Development)**
+    Ensure your frontend's `vite.config.ts` includes the necessary proxy to route API calls to the Node.js backend:
+
+    ```typescript
+    // garuda_app_v1/frontend/vite.config.ts
+    // ...
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3000',
+                changeOrigin: true,
+            },
+        }
+    }
+    // ...
+    ```
+
+---
+
+## 🚀 3. Running the Complete CDC Pipeline
+
+The complete application requires **five** separate terminals running concurrently to establish the real-time pipeline.
+
+| Terminal | Component | Directory | Command | Status Check (Success) |
+| :--- | :--- | :--- | :--- | :--- |
+| **T1** | **Kafka Broker** | `~/kafka` | `bin/kafka-server-start.sh config/kraft-broker.properties` | `Kafka Server started` |
+| **T2** | **Debezium Connect** | `~/kafka` | `bin/connect-standalone.sh config/connect-standalone.properties config/register-postgres.properties` | `Worker is now up and running` |
+| **T3** | **Redis** | N/A | `sudo systemctl start redis-server` | (Check with `redis-cli ping` -> `PONG`) |
+| **T4** | **Node.js Backend** | `garuda_app_v1/backend` | `npm run start` | `Garuda V1 Server running... Kafka consumer is running.` |
+| **T5** | **Vue Frontend** | `garuda_app_v1/frontend` | `npm run dev` | `Local: http://localhost:5173/` |
+
+> **Execution Order:** Start **T1 (Kafka)**, **T3 (Redis)**, **T2 (Debezium)**, **T4 (Backend)**, and finally **T5 (Frontend)**.
+
+---
+
+## 🗄️ 4. Database Schema Dump File
+
+The `garuda_v1_schema_dump.sql` file contains the complete schema structure, including all tables, Foreign Keys (FKs), unique constraints, and the crucial PostGIS geometry type.
+
+### Creating the Dump File
+
+The dump file is created using the following command:
+
+```bash
+pg_dump -U garuda_user -h localhost -p 5432 -s -O -d garuda_v1_db -F p > garuda_v1_schema_dump.sql
+
+```
+
+
+### Initial Seed Data (Algorithms)
+
+To ensure successful project creation, the garuda_v1_schema_dump.sql file must be appended with the following seed data to populate the algorithm_catalogue table:
+
+```bash
 INSERT INTO algorithm_catalogue (algo_id, args, description, category) VALUES
 ('Sentinel1_Change', '{"threshold": 0.5, "bands": ["VV", "VH"]}', 'Detects significant land cover changes using Sentinel-1 SAR data.', 'Change Detection'),
 ('Sentinel2_NDVI_Monitor', '{"min_ndvi": 0.3, "period": "weekly"}', 'Monitors vegetation health using Normalized Difference Vegetation Index (NDVI) from Sentinel-2.', 'Vegetation Health'),
 ('Land_Cover_Classifier', '{"model_version": "v3.1", "confidence_level": 0.8}', 'Classifies land cover types (e.g., water, forest, urban) within the AOI.', 'Classification'),
 ('Cloud_Cover_Filter', '{"max_cloud": 0.1, "sensor": "S2"}', 'Utility algorithm to filter satellite imagery based on cloud percentage.', 'Utility');
 
+```
 
-This README.md provides a comprehensive guide for anyone setting up or working on the Gadura V1 project.
+### Test CDC:
+
+```bash
+INSERT INTO alerts (project_id, aoi_fk_id, algo_fk_id, message) VALUES (37, 17, 2, '{"type": "New Project Update", "detail": "Project 1 just processed a new geospatial result.", "severity": "Medium"}');
+
+```
+
