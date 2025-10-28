@@ -1,0 +1,170 @@
+<!-- HomeViewUI.vue -->
+
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+import { useProjectStore } from '@/stores/ProjectStore';
+import { UserSession } from '@/classes/UserSession';
+import { ref, onMounted, computed } from 'vue';
+
+
+const router = useRouter();
+const projectStore = useProjectStore();
+const session = UserSession.getInstance();
+
+
+const totalProjects = ref(0);
+const activeAlerts = computed(() => projectStore.totalAlerts); // Reactive alert count
+
+onMounted(async () => {
+    // Fetch projects to update the count in the dashboard sneak peek
+    await Promise.all([
+        projectStore.fetchUserProjects(),
+    ]);
+    totalProjects.value = projectStore.userProjects.length;
+    // In a future phase, activeAlerts would be fetched from the backend Alert table
+});
+
+
+const handleAddProject = () => {
+    projectStore.initNewProjectForm();
+    router.push({ name: 'add-project' });
+};
+
+const handleManageProject = () => {
+    router.push({ name: 'manage-project' });
+};
+
+const handleMonitorProject = () => {
+    router.push({ name: 'manage-project', query: { mode: 'monitor' } });
+};
+
+const handleLogout = () => {
+    session.logout();
+    router.push('/login');
+};
+</script>
+
+
+
+<template>
+  <div id="home-view" class="main-container  flex items-center justify-center" style="background-color: var(--bg-color);">
+    <div class="w-full max-w-2xl mx-auto p-8 rounded-2xl app-card text-center pt-20"> 
+        <h1 class="text-5xl font-extrabold mb-2 tracking-tight" style="color: var(--text-color);">Welcome {{ session.username || 'Admin' }}</h1>
+        <p class="text-lg mb-10" style="color: var(--accent-color);">Geospatial Area Monitoring with Unified Data Analytics</p>
+
+        <div class="flex justify-center space-x-4 mb-12 text-sm">
+            <div class="px-4 py-2 app-card-item rounded-xl">
+                <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
+                <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
+            </div>
+            <div class="px-4 py-2 app-card-item rounded-xl">
+                <p class="text-gray-400" style="color: var(--text-muted);">Active Alerts</p>
+                <p class="font-bold text-xl" :style="{color: activeAlerts > 0 ? '#dc2626' : 'var(--text-color)'}">{{ activeAlerts }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div @click="handleAddProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-blue-600 shadow-xl" style="background-color: var(--card-bg);">
+                <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Add Project</h2>
+                <p class="text-sm" style="color: var(--text-muted);">Define a new Area of Interest (AOI) and monitoring rules.</p>
+            </div>
+
+            <div @click="handleManageProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-orange-600 shadow-xl" style="background-color: var(--card-bg);">
+                <svg class="w-12 h-12 mx-auto text-orange-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.294.58 3.35 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Manage Projects</h2>
+                <p class="text-sm" style="color: var(--text-muted);">View, filter, edit details, and modify users for existing AOIs.</p>
+            </div>
+
+            <div @click="handleMonitorProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-purple-600 shadow-xl" style="background-color: var(--card-bg);">
+                 <svg class="w-12 h-12 mx-auto text-purple-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Monitor Projects</h2>
+                <p class="text-sm" style="color: var(--text-muted);">Real-time geospatial visualization and alert analysis.</p>
+            </div>
+
+        </div>
+    </div>
+  </div>
+</template>
+
+
+<style scoped>
+/* Custom styles for an extra visual lift and to ensure pointer styling */
+.action-card {
+    cursor: pointer;
+    /* This combines the cursor style with the group class for Tailwind hover effects */
+}
+
+.main-container {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.app-card {
+    background-color: var(--container-bg);
+}
+
+.app-card-item {
+    background-color: var(--card-bg);
+    border: 1px solid var(--header-border);
+}
+
+
+.card-gradient-hover {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.card-gradient-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+/* Ensure the action cards have a noticeable effect on hover/focus for better UX */
+.action-card > div:hover, .action-card > div:focus-within {
+    /* Subtle 3D lift on hover */
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    /* For better accessibility and visual feedback */
+    border-color: #3b82f6; /* Tailwind blue-500 equivalent for focus/hover ring */
+    outline: none;
+}
+
+/* Base background for the whole view */
+#home-view {
+    background-color: #030712; /* A deeper, darker background (gray-950) for contrast */
+}
+
+/* Ensure the focus state is clear for accessibility (can be adjusted with Tailwind focus classes) */
+.action-card:focus-within {
+    outline: 2px solid #10b981; /* Example focus ring (emerald-500) */
+    outline-offset: 4px;
+}
+
+.home-view { text-align: center; padding: 50px; }
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+.action-btn {
+  padding: 15px 30px;
+  font-size: 1.1em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.add { background-color: #4CAF50; color: white; }
+.manage { background-color: #2196F3; color: white; }
+.monitor { background-color: #FF9800; color: white; }
+.logout-btn { margin-top: 50px; background: none; border: 1px solid #ccc; padding: 8px 15px; cursor: pointer; }
+
+
+.main-container {
+    background-color: #1f2937; /* Gray-800 equivalent */
+}
+/* Ensure the action cards have a noticeable effect on hover */
+.card-gradient-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+}
+</style>
