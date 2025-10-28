@@ -31,7 +31,6 @@ export class ProjectModel {
     // Transient data for the 4-step process (Frontend uses a separate form class, 
     // but the backend model can hold related data for transaction processing)
     public aois: AreaOfInterestModel[] = []; 
-    // ... other related models like UsersToProject
 
     constructor(data: Partial<ProjectData>) {
         this.id = data.id || null;
@@ -66,6 +65,37 @@ export class ProjectModel {
         this.creationDate = result.rows[0].creation_date;
         return this.id!;
     }
+
+
+    /**
+     * Updates an existing project's basic information.
+     * Requires the transaction client for context.
+     */
+    public async update(client: any): Promise<void> {
+        if (!this.id) throw new Error("Cannot update project: ID is missing.");
+
+        const query = `
+            UPDATE project 
+            SET 
+                project_name = $1, 
+                description = $2, 
+                auxdata = $3,
+                last_modified_date = NOW() -- Set update timestamp
+            WHERE id = $4
+            RETURNING last_modified_date;
+        `;
+        const values = [
+            this.projectName, 
+            this.description, 
+            this.auxData, 
+            this.id
+        ];
+        
+        // Use the passed client (from ProjectService's transaction)
+        const result = await client.query(query, values); 
+        this.lastModifiedDate = result.rows[0].last_modified_date;
+    }
+
 
     /**
      * Fetches a project by its ID.

@@ -41,11 +41,13 @@ export class AreaOfInterestModel {
         this.geomProperties = data.geom_properties || null;
     }
 
+
+
     /**
-     * Saves a single AOI to the database.
+     * Saves a single AOI to the database (for NEW projects).
      * The geometry is converted from GeoJSON string to PostGIS GEOMETRY.
      */
-    public async save(): Promise<number> {
+    public async save(client: any): Promise<number> {
         if (!this.projectId) throw new Error("AOI must be tied to an existing Project.");
         
         const query = `
@@ -54,23 +56,67 @@ export class AreaOfInterestModel {
             VALUES ($1, $2, $3, ST_GeomFromGeoJSON($4), $5, $6, $7)
             RETURNING id;
         `;
-        // Convert the GeoJSON object to a string for the PostGIS function
         const geomString = JSON.stringify(this.geomGeoJson);
         
         const values = [
-            this.projectId,
-            this.aoiId,
-            this.name,
-            geomString,
-            this.auxData,
+            this.projectId, 
+            this.aoiId, 
+            this.name, 
+            geomString, 
+            this.auxData, 
             this.publishFlag,
             this.geomProperties
         ];
         
-        const result = await db.query(query, values);
+        // Use the passed client for transaction context
+        const result = await client.query(query, values);
         this.id = result.rows[0].id;
         return this.id!;
     }
+
+    /**
+     * Deletes all AOIs associated with a project ID.
+     * This is used during an UPDATE to clear existing AOIs before re-inserting the new list.
+     * @returns The number of rows deleted.
+     */
+    public static async deleteByProjectId(client: any, projectId: number): Promise<number> {
+        const query = `DELETE FROM area_of_interest WHERE project_id = $1;`;
+        const result = await client.query(query, [projectId]);
+        return result.rowCount;
+    }
+
+    
+
+    // /**
+    //  * Saves a single AOI to the database.
+    //  * The geometry is converted from GeoJSON string to PostGIS GEOMETRY.
+    //  */
+    // public async save(): Promise<number> {
+    //     if (!this.projectId) throw new Error("AOI must be tied to an existing Project.");
+        
+    //     const query = `
+    //         INSERT INTO area_of_interest 
+    //         (project_id, aoi_id, name, geom, auxdata, publish_flag, geom_properties)
+    //         VALUES ($1, $2, $3, ST_GeomFromGeoJSON($4), $5, $6, $7)
+    //         RETURNING id;
+    //     `;
+    //     // Convert the GeoJSON object to a string for the PostGIS function
+    //     const geomString = JSON.stringify(this.geomGeoJson);
+        
+    //     const values = [
+    //         this.projectId,
+    //         this.aoiId,
+    //         this.name,
+    //         geomString,
+    //         this.auxData,
+    //         this.publishFlag,
+    //         this.geomProperties
+    //     ];
+        
+    //     const result = await db.query(query, values);
+    //     this.id = result.rows[0].id;
+    //     return this.id!;
+    // }
     
     /**
      * Fetches all AOIs for a specific project.

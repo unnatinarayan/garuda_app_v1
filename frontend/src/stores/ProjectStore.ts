@@ -86,6 +86,7 @@ export const useProjectStore = defineStore('project', () => {
         
         // --- ADD DEBUG LOGGING ---
         console.log("--- SUBMIT PAYLOAD ---");
+        console.log("Is Update Mode:", projectForm.value.isUpdateMode);
         console.log("Project Name:", bundle.projectBasicInfo.projectName);
         console.log("AOI Count:", bundle.aoiData.length);
         console.log("User Count:", bundle.userData.length);
@@ -93,19 +94,26 @@ export const useProjectStore = defineStore('project', () => {
         console.log("------------------------");
         // -------------------------
 
+
         try {
-            const response = await api.createProject(bundle);
+            let response;
+            if (projectForm.value.isUpdateMode && projectForm.value.projectIdToUpdate) {
+                // *** CRITICAL UPDATE LOGIC ***
+                response = await api.updateProject(projectForm.value.projectIdToUpdate, bundle);
+                // *****************************
+            } else {
+                response = await api.createProject(bundle);
+            }
+            
             console.log('Project submitted successfully:', response.data);
-            
-            
             
             projectForm.value.reset();
             
         } catch (error) {
             console.error('Error submitting project:', error);
-            // This is critical: Re-throw the error so the UI handles it
             throw new Error('Failed to submit project. See console for API error details.');
         }
+
     
     }
     

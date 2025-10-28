@@ -29,6 +29,21 @@ export class AoiAlgorithmMappingModel {
         this.configArgs = data.config_args || null;
     }
 
+
+    /**
+     * Deletes all mappings associated with a project's AOIs.
+     * This relies on cascade deletion from area_of_interest (if set in DB schema).
+     * If cascade is NOT set, this explicit deletion is required.
+     */
+    public static async deleteByProjectId(client: any, projectId: number): Promise<number> {
+        const query = `
+            DELETE FROM aoi_algorithm_mapping 
+            WHERE aoi_id IN (SELECT id FROM area_of_interest WHERE project_id = $1);
+        `;
+        const result = await client.query(query, [projectId]);
+        return result.rowCount;
+    }
+
     /**
      * Saves a single AOI-Algorithm mapping.
      */

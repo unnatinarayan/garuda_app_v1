@@ -5,6 +5,12 @@ import { useProjectStore } from '@/stores/ProjectStore';
 import { storeToRefs } from 'pinia'; // <-- NEW IMPORT
 import "tailwindcss";
 
+
+const props = defineProps<{
+    // The router automatically passes the ':id' parameter as a string prop named 'id'
+    id?: string; 
+}>();
+
 // Component Imports
 import Step1BasicInfo from '@/components/steps/Step1BasicInfo.vue';
 import Step2DefineAOI from '@/components/steps/Step2DefineAOI.vue';
@@ -26,7 +32,9 @@ const currentStep = computed(() => projectStore.currentStep);
 const isFinalStep = computed(() => currentStep.value === 4);
 const isUpdateMode = computed(() => projectForm.value.isUpdateMode);
 
-const projectIdParam = route.params.id ? parseInt(route.params.id as string) : null;
+const projectIdParam = props.id ? parseInt(props.id) : (route.params.id ? parseInt(route.params.id as string) : null);
+
+// const projectIdParam = route.params.id ? parseInt(route.params.id as string) : null;
 
 
 onMounted(async () => {

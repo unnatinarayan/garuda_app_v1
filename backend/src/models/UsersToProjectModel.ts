@@ -25,10 +25,12 @@ export class UsersToProjectModel {
         this.role = data.role!;
     }
 
+
+
     /**
-     * Saves a user-to-project role assignment.
+     * Saves a user-to-project role assignment (will UPSERT if the user/project pair exists).
      */
-    public async save(): Promise<number> {
+    public async save(client: any): Promise<number> { // Added client for transaction support
         const query = `
             INSERT INTO users_to_project 
             (user_id, project_id, role)
@@ -39,10 +41,47 @@ export class UsersToProjectModel {
         `;
         const values = [this.userId, this.projectId, this.role];
         
-        const result = await db.query(query, values);
+        // Use the passed client for transaction context
+        const result = await client.query(query, values);
         this.id = result.rows[0].id;
         return this.id!;
     }
+
+    /**
+     * Deletes all user assignments for a project, excluding a list of users.
+     * This handles users that were removed in the frontend UI.
+     */
+    public static async deleteExcludedUsers(client: any, projectId: number, userIdsToKeep: string[]): Promise<number> {
+        const query = `
+            DELETE FROM users_to_project 
+            WHERE project_id = $1 
+            AND user_id NOT IN (SELECT unnest($2::text[]));
+        `;
+        const result = await client.query(query, [projectId, userIdsToKeep]);
+        return result.rowCount;
+    }
+
+
+
+
+    // /**
+    //  * Saves a user-to-project role assignment.
+    //  */
+    // public async save(): Promise<number> {
+    //     const query = `
+    //         INSERT INTO users_to_project 
+    //         (user_id, project_id, role)
+    //         VALUES ($1, $2, $3)
+    //         ON CONFLICT (user_id, project_id) 
+    //         DO UPDATE SET role = EXCLUDED.role 
+    //         RETURNING id;
+    //     `;
+    //     const values = [this.userId, this.projectId, this.role];
+        
+    //     const result = await db.query(query, values);
+    //     this.id = result.rows[0].id;
+    //     return this.id!;
+    // }
 
     /**
      * Fetches all projects a user is assigned to.

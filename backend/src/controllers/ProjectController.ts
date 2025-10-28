@@ -26,6 +26,7 @@ export class ProjectController {
     this.router.get('/', this.getProjectsByUser);       // GET /api/projects
     this.router.get('/algorithms', this.getAlgorithmCatalogue); // GET /api/projects/algorithms
     this.router.get('/:id', this.getProjectDetails);    // GET /api/projects/:id
+    this.router.put('/:id', this.updateProject);         // PUT /api/projects/:id (Update)
     this.router.delete('/:id', this.deleteProject);     // DELETE /api/projects/:id
 };
 
@@ -128,6 +129,43 @@ export class ProjectController {
         } catch (error) {
             console.error('Controller Error fetching algorithms:', error);
             return res.status(500).json({ error: 'Failed to fetch algorithm catalogue.' });
+        }
+    }
+
+    /**
+     * PUT /api/projects/:id
+     * Handles the final submission of the 4-step project update form.
+     */
+    public updateProject = async (req: Request, res: Response): Promise<Response> => {
+        const projectIdParam = req.params.id;
+        const projectId = parseInt(projectIdParam);
+        const currentUserId = req.header('X-User-ID') || 'user123'; 
+
+        if (isNaN(projectId)) {
+             return res.status(400).json({ message: 'Invalid Project ID format.' });
+        }
+        
+        const projectBundle: ProjectCreationBundle = req.body;
+
+        try {
+            const updatedProject = await this.projectService.updateProject(
+                projectId, 
+                projectBundle, 
+                currentUserId
+            );
+
+            return res.status(200).json({
+                message: 'Project updated successfully across all tables.',
+                project: updatedProject
+            });
+        } catch (error) {
+            console.error('Controller Error during project update:', error);
+            // Use 404 for not found, 400 for bad requests, 500 for generic server errors
+            const statusCode = (error as Error).message.includes('not found') ? 404 : 500;
+            return res.status(statusCode).json({
+                error: 'Failed to update project.',
+                details: (error as Error).message
+            });
         }
     }
 }

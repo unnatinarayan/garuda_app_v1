@@ -61,7 +61,11 @@ const removeAOI = (clientAoiId: number) => {
     </div>
 
     <div class="map-wrapper">
-        <MapVisualization @aoi-drawn="handleAOISubmission" />
+      <MapVisualization 
+        @aoi-drawn="handleAOISubmission" 
+        :aois-to-display="projectData.aoiDrafts"
+        :is-monitor-mode="false"
+      />
     </div>
 
     <h4 class="text-lg font-semibold mt-6 text-cyan-400">Draft AOIs ({{ projectData.aoiDrafts.length }})</h4>

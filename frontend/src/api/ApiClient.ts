@@ -58,6 +58,11 @@ export class ApiClient {
         return this.client.post('/projects', bundle);
     }
 
+    // NEW: Update existing project
+    public async updateProject(projectId: number, bundle: ProjectCreationBundle): Promise<any> {
+        return this.client.put(`/projects/${projectId}`, bundle);
+    }
+
     // NEW: Fetch algorithm catalogue
     public async getAlgorithmCatalogue(): Promise<any[]> {
         const response = await this.client.get('/projects/algorithms');

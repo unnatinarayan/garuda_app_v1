@@ -43,7 +43,7 @@ onMounted(async () => {
       <p class="aoi-count">AOIs Under Watch: {{ project.aois.length }}</p>
       
       <div class="map-container">
-        <MapVisualization :aois-to-display="project.aois" />
+        <MapVisualization :aois-to-display="project.aois" :is-monitor-mode="true" />
       </div>
     </div>
 

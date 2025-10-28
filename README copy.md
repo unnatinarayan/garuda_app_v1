@@ -6,6 +6,66 @@ This document details the project architecture, prerequisites, setup, and databa
 
 🏛️ 1. Architecture Overview (Class-Oriented)
 
+backend
+└── 📁src
+    └── 📁controllers
+        ├── AlertsController.ts
+        ├── AuthController.ts
+        ├── ProjectController.ts
+    └── 📁db
+        ├── DBClient.ts
+    └── 📁models
+        ├── AlertModel.ts
+        ├── AlgorithmCatalogueModel.ts
+        ├── AoiAlgorithmMappingModel.ts
+        ├── AreaOfInterestModel.ts
+        ├── ProjectModel.ts
+        ├── UserModel.ts
+        ├── UsersToProjectModel.ts
+    └── 📁services
+        ├── AlertsService.ts
+        ├── AlertsSSEService.ts
+        ├── ProjectService.ts
+    └── 📁types
+        ├── GeoJson.ts
+    ├── App.ts
+    └── server.ts
+frontend
+└── 📁src
+    └── 📁api
+        ├── ApiClient.ts
+    └── 📁assets
+        ├── garuda.png
+    └── 📁classes
+        ├── AreaOfInterestDraft.ts
+        ├── ProjectFormData.ts
+        ├── UserSession.ts
+    └── 📁components
+        └── 📁auth
+            ├── LoginForm.vue
+        └── 📁map
+            ├── MapVisualization.vue
+        └── 📁steps
+            ├── Step1BasicInfo.vue
+            ├── Step2DefineAOI.vue
+            ├── Step3AlgoMapping.vue
+            ├── Step4AddUsers.vue
+    └── 📁router
+        ├── index.ts
+    └── 📁stores
+        ├── ProjectStore.ts
+    └── 📁types
+        ├── ProjectTypes.ts
+    └── 📁views
+        ├── ConfigureProjectUI.vue
+        ├── DisplayProjectUI.vue
+        ├── HomeViewUI.vue
+        ├── MonitorMapView.vue
+    ├── App.vue
+    ├── main.ts
+    └── style.css
+
+
 The project is built on a strict Object-Oriented paradigm across the stack, leveraging dedicated classes for data modeling, service logic, and UI state management.
 
 Layer
