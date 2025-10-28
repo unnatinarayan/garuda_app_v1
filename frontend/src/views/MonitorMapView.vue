@@ -34,7 +34,7 @@ onMounted(async () => {
 
 <template>
   <div class="monitor-map-view">
-    <button @click="router.back()" class="btn-back">← Back to Projects</button>
+    <button @click="router.back()" class="btn-back" style="color: aliceblue;">← Back to Projects</button>
     
     <div v-if="isLoading" class="loading">Loading Monitor Data for Project ID: {{ props.id }}...</div>
     

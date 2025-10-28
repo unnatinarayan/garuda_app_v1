@@ -6,6 +6,7 @@ import { ApiClient } from './api/ApiClient'; // Import ApiClient to use its user
 import { ref, watchEffect, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { UserSession } from './classes/UserSession';
+import NotificationDropdown from '@/components/common/NotificationDropdown.vue'; // <<< NEW IMPORT
 import { useProjectStore } from './stores/ProjectStore'; // Import store for alerts
 
 const router = useRouter();
@@ -17,7 +18,7 @@ const projectStore = useProjectStore(); // Use project store for alert count
 const apiClient = ApiClient.getInstance(); // Get the client instance
 const showNavbar = ref(false);
 const isDarkMode = ref(false); // Default to false (Light Theme)
-const alertCount = computed(() => projectStore.userProjects.length > 0 ? 1 : 0); // Mocked alert count for demonstration
+// const alertCount = computed(() => projectStore.userProjects.length > 0 ? 1 : 0); // Mocked alert count for demonstration
 
 // Local variable to hold the SSE connection instance
 const eventSource = ref<EventSource | null>(null);
@@ -154,12 +155,14 @@ const profileInitials = computed(() => {
                 <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             </button>
 
-            <button class="relative p-2 hover:text-red-500 transition-colors duration-200" style="color: var(--text-muted);">
+            <!-- <button class="relative p-2 hover:text-red-500 transition-colors duration-200" style="color: var(--text-muted);">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 <span v-if="projectStore.totalAlerts > 0" class="absolute top-1 right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {{ projectStore.totalAlerts > 99 ? '99+' : projectStore.totalAlerts }}
                 </span>
-            </button>
+            </button> -->
+
+            <NotificationDropdown />
             
             <div @click="handleLogout" title="Logout" class="cursor-pointer w-9 h-9 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm hover:bg-red-500 transition-colors duration-200">
                 {{ profileInitials }}

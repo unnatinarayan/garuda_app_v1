@@ -1,13 +1,10 @@
 // ProjectController.ts
-
-
 import { Router } from 'express';
 
 import type { Request, Response, NextFunction } from 'express';
 
 import { ProjectService } from '../services/ProjectService.ts';
 import type { ProjectCreationBundle } from '../services/ProjectService.ts';
-
 /**
  * ProjectController: Handles routing and HTTP request/response logic for projects.
  */
@@ -57,7 +54,6 @@ export class ProjectController {
             });
         }
     }
-
     /**
      * GET /api/projects
      * Fetches all projects the current user is involved in (for HomeViewUI: Manage/Monitor)
@@ -82,7 +78,6 @@ export class ProjectController {
         if (isNaN(projectId)) {
             return res.status(400).json({ message: 'Invalid Project ID format.' });
         }
-
         try {
             const details = await this.projectService.getProjectDetails(projectId);
 
@@ -97,8 +92,6 @@ export class ProjectController {
             return res.status(500).json({ error: 'Failed to fetch project details.' });
         }
     }
-
-    
 
     /**
      * DELETE /api/projects/:id
