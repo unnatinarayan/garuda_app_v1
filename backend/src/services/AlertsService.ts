@@ -1,13 +1,17 @@
 // backend/src/services/AlertsService.ts
 
+
+
+// backend/src/services/AlertsService.ts
+
 import { AlertModel } from '../models/AlertModel.ts';
 import type { AlertData } from '../models/AlertModel.ts';
 
 
 export interface NewAlertPayload {
     project_id: number;
-    aoi_fk_id: number;
-    algo_fk_id: number;
+    aoi_id: string; // <-- RENAMED
+    algo_id: number; // <-- RENAMED (PK 'id' from algorithm_catalogue)
     message: Record<string, any>;
 }
 
@@ -23,17 +27,17 @@ export class AlertsService {
      * @returns The newly created AlertModel instance.
      */
     public async recordNewAlert(payload: NewAlertPayload): Promise<AlertModel> {
-        
+
         // Input validation (basic check)
-        if (!payload.project_id || !payload.aoi_fk_id || !payload.algo_fk_id || !payload.message) {
-            throw new Error("Missing required fields for alert: project_id, aoi_fk_id, algo_fk_id, or message.");
+        if (!payload.project_id || !payload.aoi_id || !payload.algo_id || !payload.message) {
+            throw new Error("Missing required fields for alert: project_id, aoi_id, algo_id, or message.");
         }
 
         // Create an instance of the model
         const newAlert = new AlertModel({
             project_id: payload.project_id,
-            aoi_fk_id: payload.aoi_fk_id,
-            algo_fk_id: payload.algo_fk_id,
+            aoi_id: payload.aoi_id, // <-- Use new name
+            algo_id: payload.algo_id, // <-- Use new name
             message: payload.message,
             // 'id' and 'alert_timestamp' are intentionally left out, to be set by .save()
         });

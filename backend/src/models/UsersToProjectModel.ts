@@ -1,3 +1,5 @@
+// UsersToProjectModel.ts
+
 import { DBClient } from '../db/DBClient.ts';
 
 const db = DBClient.getInstance();
@@ -60,28 +62,6 @@ export class UsersToProjectModel {
         const result = await client.query(query, [projectId, userIdsToKeep]);
         return result.rowCount;
     }
-
-
-
-
-    // /**
-    //  * Saves a user-to-project role assignment.
-    //  */
-    // public async save(): Promise<number> {
-    //     const query = `
-    //         INSERT INTO users_to_project 
-    //         (user_id, project_id, role)
-    //         VALUES ($1, $2, $3)
-    //         ON CONFLICT (user_id, project_id) 
-    //         DO UPDATE SET role = EXCLUDED.role 
-    //         RETURNING id;
-    //     `;
-    //     const values = [this.userId, this.projectId, this.role];
-        
-    //     const result = await db.query(query, values);
-    //     this.id = result.rows[0].id;
-    //     return this.id!;
-    // }
 
     /**
      * Fetches all projects a user is assigned to.

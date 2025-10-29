@@ -20,7 +20,7 @@ export interface ProjectCreationBundle {
         name: string;
         geomGeoJson: GeoJsonPolygon;
         geomProperties: Record<string, any> | null;
-        mappedAlgorithms: { algoId: number; configArgs: Record<string, any> }[]; // PK 'id' is used
+        mappedAlgorithms: { algoId: string; configArgs: Record<string, any> }[]; // <-- algoId is now STRING
     }[];
     userData: { userId: string; role: string }[];
 }

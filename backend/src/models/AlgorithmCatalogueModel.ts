@@ -1,3 +1,4 @@
+// AlgorithmCatalogueModel.ts
 import { DBClient } from '../db/DBClient.ts';
 
 const db = DBClient.getInstance();

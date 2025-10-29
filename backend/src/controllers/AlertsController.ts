@@ -1,9 +1,13 @@
 // backend/src/controllers/AlertsController.ts
 
-import { Router } from 'express'; 
+
+
+// backend/src/controllers/AlertsController.ts
+
+import { Router } from 'express';
 
 // which handles the difference between CommonJS and ES Modules better.
-import type { Request, Response, NextFunction } from 'express'; 
+import type { Request, Response, NextFunction } from 'express';
 
 import { AlertsService } from '../services/AlertsService.ts';
 import type { NewAlertPayload } from '../services/AlertsService.ts';
@@ -24,7 +28,7 @@ export class AlertsController {
     private initializeRoutes() {
         // POST /api/alerts - Endpoint to insert a new alert
         this.router.post('/', this.recordAlert);
-        
+
         // You would add GET/DELETE/etc. routes here later
     }
 
@@ -34,21 +38,21 @@ export class AlertsController {
     private recordAlert = async (req: Request, res: Response, next: NextFunction) => {
         try {
             // TypeScript casting for clarity, matching the service interface
-            const payload: NewAlertPayload = req.body; 
+            const payload: NewAlertPayload = req.body;
 
-            // Assuming the project_id, aoi_fk_id, and algo_fk_id are valid FKs 
+            // Assuming the project_id, aoi_id, and algo_id are valid FKs
             // This relies on the database to throw an error if the FKs are invalid.
 
             const newAlert = await this.alertsService.recordNewAlert(payload);
 
             // Respond with the newly created alert details (including the generated ID and timestamp)
-            res.status(201).json({ 
+            res.status(201).json({
                 message: 'Alert successfully recorded.',
                 alert: {
                     id: newAlert.id,
                     project_id: newAlert.projectId,
-                    aoi_fk_id: newAlert.aoiFkId,
-                    algo_fk_id: newAlert.algoFkId,
+                    aoi_id: newAlert.aoiId, // <-- Use new property name
+                    algo_id: newAlert.algoId, // <-- Use new property name
                     message: newAlert.message,
                     alert_timestamp: newAlert.alertTimestamp
                 }

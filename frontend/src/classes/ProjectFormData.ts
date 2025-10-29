@@ -22,16 +22,16 @@ export class ProjectFormData {
 
     public aoiDrafts: AreaOfInterestDraft[] = [];
     public users: UserRoleAssignment[] = [];
-    
+
     public isUpdateMode: boolean = false;
     public currentStep: number = 1;
     public projectIdToUpdate: number | null = null;
-    
+
     constructor(isUpdate: boolean = false, projectId: number | null = null) {
         this.isUpdateMode = isUpdate;
         this.projectIdToUpdate = projectId;
         // Initialize with creator as owner (will be updated/overridden later)
-        this.users = [{ userId: 'current_user_id', role: 'owner', username: 'Creator' }]; 
+        this.users = [{ userId: 'current_user_id', role: 'owner', username: 'Creator' }];
     }
 
     public nextStep(): void {
@@ -77,7 +77,7 @@ export class ProjectFormData {
             userData: this.users.map(u => ({ userId: u.userId, role: u.role })),
         };
     }
-    
+
     public reset(): void {
         this.projectName = '';
         this.description = '';

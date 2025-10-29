@@ -3,8 +3,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 // STATIC IMPORTS FOR CLASSES
-import { ProjectFormData } from '../classes/ProjectFormData'; 
-import { AreaOfInterestDraft } from '../classes/AreaOfInterestDraft'; // <-- Ensure this is added
+import { ProjectFormData } from '../classes/ProjectFormData';
+import { AreaOfInterestDraft } from '../classes/AreaOfInterestDraft';
 import { ApiClient } from '../api/ApiClient';
 
 const api = ApiClient.getInstance();
@@ -14,29 +14,39 @@ const api = ApiClient.getInstance();
  * This is now synchronous, relying on static imports.
  */
 function mapBackendToForm(data: any): ProjectFormData {
-    
+
     // Instantiate the ProjectFormData class
     const form = new ProjectFormData(true, data.id); // Set to update mode
 
     // Step 1 Mapping
-    form.projectName = data.project_name;
+    form.projectName = data.project_name; // <-- Backend alias is used
     form.description = data.description;
-    form.auxData = data.auxdata || {};
+    // Map JSONB object to key/value drafts for the form UI
+    form.auxDataDrafts = data.auxdata ? Object.entries(data.auxdata).map(([key, value]) => ({
+        key,
+        value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+    })) : [];
     form.currentStep = 1; // Reset to start step
 
     // Step 2 & 3 Mapping (AOIs and Mappings)
     let aoiCounter = 1;
     form.aoiDrafts = data.aois.map((aoi: any) => {
         // Instantiate the AreaOfInterestDraft class
-        const aoiDraft = new AreaOfInterestDraft(aoi.name, aoi.geomGeoJson, aoiCounter++);
-        aoiDraft.aoiId = aoi.aoi_id; 
+        const aoiDraft = new AreaOfInterestDraft(
+            aoi.name,
+            aoi.geomGeoJson,
+            aoiCounter++,
+            aoi.geom_properties?.originalType || 'Polygon', // Preserve original geometry type
+            aoi.geom_properties?.buffer || null
+        );
+        aoiDraft.aoiId = aoi.aoi_id;
         aoiDraft.geomProperties = aoi.geom_properties || {};
 
         // Map algorithms
         aoi.mappedAlgorithms.forEach((algo: any) => {
             aoiDraft.mapAlgorithm(
-                algo.mapping_id, 
-                algo.algo_id, // We should pass algo_id string here for better mapping logic
+                algo.algo_id, // <-- Use the STRING algo_id for mapping
+                algo.algo_id, // Use algo_id string as the display name
                 algo.config_args
             );
         });
@@ -49,7 +59,7 @@ function mapBackendToForm(data: any): ProjectFormData {
         role: u.role,
         username: u.user_id,
     }));
-    
+
     return form;
 }
 
@@ -58,15 +68,14 @@ function mapBackendToForm(data: any): ProjectFormData {
  * ProjectStore: Manages the state and logic related to Project instances.
  */
 export const useProjectStore = defineStore('project', () => {
-// ... The rest of the Pinia store remains the same ...
-// ... All functions (actions) correctly call mapBackendToForm now ...
-    
+    // ... The rest of the Pinia store remains the same ...
+
     // State: Holds the active form object and the list of projects
     const projectForm = ref<ProjectFormData>(new ProjectFormData());
-    const userProjects = ref<any[]>([]); 
+    const userProjects = ref<any[]>([]);
 
     const activeAlerts = ref<any[]>([]); // New state for alerts
-    
+
     // Getters
     const isEditing = computed(() => projectForm.value.isUpdateMode);
     const currentStep = computed(() => projectForm.value.currentStep);
@@ -75,7 +84,7 @@ export const useProjectStore = defineStore('project', () => {
     const totalAlerts = computed(() => activeAlerts.value.length); // New getter
 
     // Actions
-    
+
     function initNewProjectForm() {
         projectForm.value = new ProjectFormData(false, null);
     }
@@ -83,7 +92,7 @@ export const useProjectStore = defineStore('project', () => {
     async function submitProject(): Promise<void> {
         // ... (existing submitProject logic) ...
         const bundle = projectForm.value.toBackendBundle();
-        
+
         // --- ADD DEBUG LOGGING ---
         console.log("--- SUBMIT PAYLOAD ---");
         console.log("Is Update Mode:", projectForm.value.isUpdateMode);
@@ -104,19 +113,19 @@ export const useProjectStore = defineStore('project', () => {
             } else {
                 response = await api.createProject(bundle);
             }
-            
+
             console.log('Project submitted successfully:', response.data);
-            
+
             projectForm.value.reset();
-            
+
         } catch (error) {
             console.error('Error submitting project:', error);
             throw new Error('Failed to submit project. See console for API error details.');
         }
 
-    
+
     }
-    
+
     async function fetchUserProjects(): Promise<void> {
         // ... (existing fetchUserProjects logic) ...
 
@@ -135,13 +144,13 @@ export const useProjectStore = defineStore('project', () => {
     async function loadProjectForUpdate(projectId: number): Promise<void> {
         try {
             const response = await api.getProjectDetails(projectId);
-            projectForm.value = mapBackendToForm(response); 
+            projectForm.value = mapBackendToForm(response);
         } catch (error) {
             console.error(`Error loading project ${projectId}:`, error);
             throw new Error('Failed to load project data for editing.');
         }
     }
-    
+
     async function deleteProject(projectId: number): Promise<void> {
         await api.deleteProject(projectId);
     }
@@ -149,15 +158,15 @@ export const useProjectStore = defineStore('project', () => {
     function addAlert(alert: any) {
         // Ensure unique alerts if loading from Redis/SSE simultaneously
         if (!activeAlerts.value.some(a => a.id === alert.id)) {
-             // Add to the beginning of the list (newest first)
-            activeAlerts.value.unshift(alert); 
+            // Add to the beginning of the list (newest first)
+            activeAlerts.value.unshift(alert);
         }
     }
 
     async function markAlertAsRead(alertId: number) {
         const session = UserSession.getInstance();
         const userId = session.getUserId();
-        
+
         if (!userId) return;
 
         try {
@@ -211,5 +220,3 @@ export const useProjectStore = defineStore('project', () => {
 
     };
 });
-
-

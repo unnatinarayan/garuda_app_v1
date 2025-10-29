@@ -11,8 +11,8 @@ const db = DBClient.getInstance();
 export interface AlertData {
     id: number;
     project_id: number;
-    aoi_fk_id: number; // FK to area_of_interest.id
-    algo_fk_id: number; // FK to algorithm_catalogue.id
+    aoi_id: string; // FK to area_of_interest.id
+    algo_id: number; // FK to algorithm_catalogue.id
     message: Record<string, any>;
     alert_timestamp: Date;
 }
@@ -23,8 +23,8 @@ export interface AlertData {
 export class AlertModel {
     public id: number | null;
     public projectId: number;
-    public aoiFkId: number;
-    public algoFkId: number;
+    public aoiId: string;
+    public algoId: number;
     public message: Record<string, any>;
     public alertTimestamp: Date | null;
 
@@ -35,8 +35,8 @@ export class AlertModel {
     constructor(data: Partial<AlertData>) {
         this.id = data.id || null;
         this.projectId = data.project_id!;
-        this.aoiFkId = data.aoi_fk_id!;
-        this.algoFkId = data.algo_fk_id!;
+        this.aoiId = data.aoi_id!;
+        this.algoId = data.algo_id!;
         this.message = data.message || {};
         this.alertTimestamp = data.alert_timestamp || null;
     }
@@ -46,20 +46,20 @@ export class AlertModel {
      * @returns The ID of the newly created alert.
      */
     public async save(): Promise<number> {
-        if (!this.projectId || !this.aoiFkId || !this.algoFkId) {
+        if (!this.projectId || !this.aoiId || !this.algoId) {
             throw new Error("Alert must reference a Project, AOI, and Algorithm.");
         }
 
         const query = `
             INSERT INTO alerts 
-            (project_id, aoi_fk_id, algo_fk_id, message)
+            (project_id, aoi_id, algo_id, message)
             VALUES ($1, $2, $3, $4)
             RETURNING id, alert_timestamp;
         `;
         const values = [
             this.projectId,
-            this.aoiFkId,
-            this.algoFkId,
+            this.aoiId,
+            this.algoId,
             this.message
         ];
         
