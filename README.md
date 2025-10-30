@@ -65,7 +65,7 @@ This section covers setting up the database and preparing it for Change Data Cap
     ```
 
 
-```bash 
+```.env bash 
 # Server Configuration
 PORT=3000
 
@@ -77,10 +77,7 @@ DB_PASSWORD=your_strong_password
 DB_PORT=5432
 ```
 
-=======
-    ```
 
->>>>>>> c31b5a08e77b99dc27c5ed578c8a0899089912b8
 2.  **Enable Logical Replication (CDC Configuration)**
 
     Edit the PostgreSQL configuration file (e.g., `/etc/postgresql/16/main/postgresql.conf`) and ensure these settings are active:
@@ -265,8 +262,7 @@ INSERT INTO alerts (project_id, aoi_fk_id, algo_fk_id, message) VALUES (37, 17, 
 INSERT INTO alerts (project_id, aoi_fk_id, algo_fk_id, message) VALUES (38, 18, 3, '{"type": "New Project Update", "detail": "Project 1 just processed a new geospatial result.", "severity": "Medium"}');
 
 
-=======
->>>>>>> c31b5a08e77b99dc27c5ed578c8a0899089912b8
+
 ```
 
 https://docs.google.com/document/d/1l-ZPJcTxA3AQtHbtxo4dWeC2cAn43YtrqvzBWx5-wlQ/edit?usp=sharing
@@ -278,3 +274,4 @@ https://docs.google.com/document/d/1r9Mm2we47yvmU7ruuzOqMgFe-dshgLGXAzVmrRvLl5s/
 ### Final Docs
 https://docs.google.com/document/d/1NbK7AfTEfV0zuK0rDt07MbnihCiph7KsW7wDKaRrbRw/edit?usp=sharing
 
+https://docs.google.com/document/d/1q8o2brW7Hcq3vvnDQseXc6PMot492g0M/edit?usp=sharing&ouid=113621658258964798384&rtpof=true&sd=true

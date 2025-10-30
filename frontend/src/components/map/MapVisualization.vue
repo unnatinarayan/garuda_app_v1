@@ -70,7 +70,7 @@ const initializeMap = () => {
         map.value = null;
     }
 
-    map.value = L.map('map').setView([21.5937, 80.9629], 5);
+    map.value = L.map('map').setView([21.5937, 80.9629], 8);
     
     // Define Layers
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 

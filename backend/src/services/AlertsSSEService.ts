@@ -3,81 +3,97 @@
 import type { Express, Request, Response } from 'express';
 import { Kafka } from 'kafkajs';
 import { createClient } from '@redis/client';
-import { DBClient } from '../db/DBClient.ts'; // To look up project users
+import { DBClient } from '../db/DBClient.ts'; // Used to look up which users are assigned to a project
 
 // --- CONFIGURATION ---
+// The Kafka topic name where PostgreSQL (via Debezium/CDC) publishes new 'alerts' records.
 const KAFKA_TOPIC = 'dbserver1.public.alerts';
+// Group ID for the Kafka consumer, ensures messages aren't processed by other instances.
 const KAFKA_GROUP_ID = 'garuda-alerts-group';
+// Connection URL for Redis (used for alert caching/history).
 const REDIS_URL = 'redis://localhost:6379';
+// List of Kafka broker addresses.
 const KAFKA_BROKERS = ['localhost:9092'];
 // ---
 
-// Use a specific type for the SSE client map: { userId: [res, res, ..] }
+// Map to hold **active HTTP connections** (Server-Sent Events) for each logged-in user.
+// Key: userId, Value: Array of Express Response objects (one for each open browser tab).
 type SSEClientMap = { [userId: string]: Response[] };
 let sseClients: SSEClientMap = {};
 
+// Initialize the Redis client.
 const redisClient = createClient({ url: REDIS_URL });
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
 
+// Initialize the Kafka client and configure retries for robustness.
 const kafka = new Kafka({
     clientId: 'garuda-alert-consumer',
     brokers: KAFKA_BROKERS,
     retry: {
         initialRetryTime: 1000,
-        retries: 50, // Keep retrying connection
+        retries: 50, // Keep trying to connect to the Kafka broker
     }
 });
+// Create the Kafka consumer instance that belongs to a group.
 const consumer = kafka.consumer({ groupId: KAFKA_GROUP_ID });
-const db = DBClient.getInstance();
+const db = DBClient.getInstance(); // Get the single database connection pool instance
 
 /**
- * Sends a notification object to all connected SSE clients for a specific user.
+ * Sends a notification object instantly to any client (browser tab) currently connected 
+ * via the SSE stream for a specific user.
  */
 function sendToSSEClient(userId: string, notification: Record<string, any>): void {
     const clients = sseClients[userId];
+    // Format the message according to the Server-Sent Events specification: 'data: {payload}\n\n'
     const notifString = `data: ${JSON.stringify(notification)}\n\n`;
 
     if (clients && clients.length > 0) {
         console.log(`SSE: Sending alert to ${clients.length} clients for user ${userId}`);
         clients.forEach(client => {
-            client.write(notifString);
+            client.write(notifString); // Push data instantly to the browser
         });
     } else {
+        // If the user is offline, the alert is only saved in Redis (Step 4)
         console.log(`SSE: User ${userId} is offline. Alert stored in Redis.`);
     }
 }
 
 /**
- * Kafka consumer logic that receives the CDC event and routes it.
+ * Kafka consumer logic. This is the heart of the real-time system.
+ * It constantly pulls new alert messages from the Kafka topic, identifies recipients,
+ * caches the alert in Redis, and pushes it via SSE.
  */
 async function runKafkaConsumer(): Promise<void> {
     try {
-        await redisClient.connect(); // Connect Redis when starting consumer
+        await redisClient.connect(); // Connect to Redis database
 
         await consumer.connect();
+        // Subscribe to the alerts topic, start from where we left off (not from the beginning)
         await consumer.subscribe({ topic: KAFKA_TOPIC, fromBeginning: false });
 
         await consumer.run({
+            // Function executed for every new message received from Kafka
             eachMessage: async ({ topic, partition, message }) => {
                 const messageValue = message.value?.toString();
                 if (!messageValue) return;
 
                 try {
                     const data = JSON.parse(messageValue);
-                    // Debezium: 'after' contains the new row data for INSERT (op='c')
+                    // Debezium wraps the new row data in 'payload.after' for an INSERT operation (op='c')
                     const payload = data?.payload?.after; 
                     if (!payload || data.payload.op !== 'c') {
                         console.log(`CDC: Skipping message (op: ${data?.payload?.op})`);
-                        return;
+                        return; // Only process new inserts/creations
                     }
                     
-                    // --- CORE LOGIC: Find all users for the changed project ---
+                    // --- CORE LOGIC: Find all users assigned to the project that triggered the alert ---
                     const projectId = payload.project_id;
                     const usersResult = await db.query(
                         'SELECT user_id FROM users_to_project WHERE project_id = $1',
                         [projectId]
                     );
 
+                    // Extract all user IDs who are linked to this project
                     const recipientUserIds: string[] = usersResult.rows.map(row => row.user_id);
 
                     if (recipientUserIds.length === 0) {
@@ -85,9 +101,9 @@ async function runKafkaConsumer(): Promise<void> {
                         return;
                     }
 
-                    // Build the notification object from the 'alerts' table row
+                    // Structure the alert data for the frontend notification dropdown
                     const notification = {
-                        id: payload.id, // Primary key from alerts table
+                        id: payload.id, // Primary key of the 'alerts' table row
                         message: payload.message,
                         projectId: projectId,
                         aoiId: payload.aoi_fk_id,
@@ -95,15 +111,17 @@ async function runKafkaConsumer(): Promise<void> {
                         title: `Project Alert: ${projectId}`,
                     };
                     
-                    // Process for each recipient
+                    // Process the alert for each recipient user
                     for (const userId of recipientUserIds) {
                         const notifString = JSON.stringify(notification);
                         
-                        // 1. Save to Redis (List structure)
+                        // 1. **REDIS Caching (Persistence for Offline Users)**
+                        // lPush adds the new alert to the *head* (left side) of the list.
                         await redisClient.lPush(`alerts:${userId}`, notifString);
-                        await redisClient.lTrim(`alerts:${userId}`, 0, 49); // Keep newest 50 alerts
+                        // lTrim keeps the list size manageable (e.g., last 50 alerts)
+                        await redisClient.lTrim(`alerts:${userId}`, 0, 49); 
 
-                        // 2. Send via SSE
+                        // 2. **SSE Delivery (Real-time Push)**
                         sendToSSEClient(userId, notification);
                     }
 
@@ -115,65 +133,67 @@ async function runKafkaConsumer(): Promise<void> {
         console.log('⚡️ AlertsSSEService: Kafka consumer is running.');
     } catch (error) {
         console.error('🚨 AlertsSSEService: Kafka or Redis connection failed:', error);
-        // Implement retry logic if needed, but KafkaJS has built-in retries for brokers
     }
 }
 
 /**
- * Initializes the entire real-time alert system (SSE endpoints and Kafka consumer).
+ * Initializes the entire real-time alert system by setting up 
+ * the SSE HTTP endpoint and starting the Kafka consumer worker.
  */
 export function initAlertsSSE(app: Express): void {
-    // 1. SSE Endpoint for Client Connection
+    // 1. SSE Endpoint for Client Connection (The browser connects here to listen)
     app.get('/api/alerts/events/:userId', async (req: Request, res: Response) => {
         const { userId } = req.params;
-        // In a real app, VERIFY the userId against the session/JWT here!
 
+        // Set mandatory headers for Server-Sent Events stream
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders();
+        res.flushHeaders(); // Send headers immediately
 
-        // Store client connection
+        // Register the active HTTP response object in the map
         if (!sseClients[userId]) sseClients[userId] = [];
         sseClients[userId].push(res);
 
-        // Send missed notifications from Redis (in reverse order: newest first)
+        // **REDIS: Send Historical/Missed Notifications on Connect**
         try {
+            // lRange retrieves the stored list of alerts (newest first)
             const notifs = await redisClient.lRange(`alerts:${userId}`, 0, -1);
-            // notifs is LIFO (lPush/lRange), so send as-is for newest-first display
+            // Send each cached alert immediately to the newly connected client
             notifs.forEach(msg => res.write(`data: ${msg}\n\n`)); 
         } catch (err) {
             console.error('Redis historical fetch error:', err);
         }
 
-        // Clean up on disconnect
+        // Remove the connection from the map when the client closes the stream
         req.on('close', () => {
             sseClients[userId] = sseClients[userId].filter(client => client !== res);
         });
     });
 
-    // 2. Mark as Read API (Clears from Redis list)
+    // 2. Mark as Read API (Allows the client to clear an alert from their Redis history)
     app.post('/api/alerts/mark-read', async (req: Request, res: Response) => {
         const { userId, notificationId } = req.body;
         
         try {
-            // Fetch all, filter the one to remove, delete list, re-push filtered list
+            // Fetches the current list of alert JSON strings from Redis
             const notifs = await redisClient.lRange(`alerts:${userId}`, 0, -1);
             
-            // LREM would be more efficient, but filtering a list of JSON strings is safer
             let countBefore = notifs.length;
+            // Filter out the alert with the matching ID
             const filtered = notifs.filter(nn => {
                 try {
                     return JSON.parse(nn).id != notificationId;
                 } catch {
-                    return true; // Keep malformed items to be safe
+                    return true; // Keep malformed items just in case
                 }
             });
 
             if (filtered.length !== countBefore) {
+                // Completely replace the old Redis list with the filtered, new list
                 await redisClient.del(`alerts:${userId}`);
                 if (filtered.length > 0) {
-                    await redisClient.rPush(`alerts:${userId}`, filtered); // rPush multiple items efficiently
+                    await redisClient.rPush(`alerts:${userId}`, filtered); 
                 }
             }
 
@@ -184,6 +204,6 @@ export function initAlertsSSE(app: Express): void {
         }
     });
 
-    // 3. Start the Kafka Consumer
+    // 3. Start the Kafka Consumer worker process
     runKafkaConsumer();
 }
