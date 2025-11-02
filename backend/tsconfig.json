@@ -23,6 +23,7 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+    // "noUnusedLocals": true,
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,

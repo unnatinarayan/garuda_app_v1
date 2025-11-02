@@ -59,7 +59,7 @@ This section covers setting up the database and preparing it for Change Data Cap
 
     # 3. Restore the schema structure from the dump file
     psql -U garuda_user -d garuda_v1_db -h localhost < garuda_v1_schema_dump.sql
-<<<<<<< HEAD
+
 
 
     ```
@@ -252,6 +252,68 @@ INSERT INTO algorithm_catalogue (algo_id, args, description, category) VALUES
 ('Cloud_Cover_Filter', '{"max_cloud": 0.1, "sensor": "S2"}', 'Utility algorithm to filter satellite imagery based on cloud percentage.', 'Utility');
 
 ```
+
+
+### chcek node tsc
+
+node --version
+10.9.3
+nvm list
+22.20.0
+nvm use v____
+tsc --init
+npx tsc --init
+sudp apy install node-typescript
+
+change to workspace version
+
+tsc && node src/server.ts
+
+
+nvm install --lts
+nvm use --lts
+nvm alias default lts
+node -v
+
+
+###
+
+npm i -D ts-node
+
+ts-node src...
+
+node --require ts-node/register src/server.ts
+
+
+### egma script modules
+
+type: mpdule
+moduke: node16
+
+ts-node-esm src/...
+
+
+### nei
+nvm list
+nvm use v20..
+
+node --loader ts-node/esm src/main.ts
+
+
+### check
+
+npx ts-node --version
+
+
+
+### install tsx
+
+npx i -D tsx
+
+tsx src/server.ts
+
+
+
 
 ### Test CDC:
 
