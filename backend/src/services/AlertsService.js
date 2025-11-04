@@ -1,20 +1,4 @@
-// backend/src/services/AlertsService.ts
-
-
-
-// backend/src/services/AlertsService.ts
-
-import { AlertModel } from '../models/AlertModel.ts';
-import type { AlertData } from '../models/AlertModel.ts';
-
-
-export interface NewAlertPayload {
-    project_id: number;
-    aoi_id: string; // <-- RENAMED
-    algo_id: number; // <-- RENAMED (PK 'id' from algorithm_catalogue)
-    message: Record<string, any>;
-}
-
+import { AlertModel } from '../models/AlertModel.js';
 
 /**
  * AlertsService: Manages business logic related to alerts.
@@ -23,10 +7,10 @@ export class AlertsService {
 
     /**
      * Records a new alert using the data provided in the API request body.
-     * @param payload - The alert data from the incoming API request.
-     * @returns The newly created AlertModel instance.
+     * @param {Object} payload - The alert data from the incoming API request.
+     * @returns {Promise<AlertModel>} The newly created AlertModel instance.
      */
-    public async recordNewAlert(payload: NewAlertPayload): Promise<AlertModel> {
+    async recordNewAlert(payload) {
 
         // Input validation (basic check)
         if (!payload.project_id || !payload.aoi_id || !payload.algo_id || !payload.message) {

@@ -1,22 +1,20 @@
-// frontend/src/components/steps/Step3AlgoMapping.vue
-
-<script setup lang="ts">
-import { ProjectFormData } from '@/classes/ProjectFormData';
+<script setup>
+import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { onMounted, ref, watch } from 'vue';
-import { ApiClient } from '@/api/ApiClient';
+import { ApiClient } from '@/api/ApiClient.js';
 
-const props = defineProps<{
-	projectData: ProjectFormData;
-}>();
+const props = defineProps({
+	projectData: ProjectFormData,
+});
 
 const api = ApiClient.getInstance();
 
 // Algorithms will now be fetched from the database via API
-const algorithms = ref<any[]>([]);
+const algorithms = ref([]);
 
 const selectedAOI = ref(props.projectData.aoiDrafts[0] || null);
-const selectedAlgoId = ref<string | null>(null); // <-- Changed type to STRING
-const currentConfigArgs = ref<string>('{}');
+const selectedAlgoId = ref(null); // <-- No longer needs type annotation
+const currentConfigArgs = ref('{}');
 
 const loadConfig = () => {
 	if (!selectedAOI.value || !selectedAlgoId.value) {

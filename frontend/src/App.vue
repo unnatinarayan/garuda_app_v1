@@ -1,13 +1,13 @@
 <!-- App.vue -->
 
-<script setup lang="ts">
+<script setup>
 
-import { ApiClient } from './api/ApiClient'; // Import ApiClient to use its userId
+import { ApiClient } from './api/ApiClient.js'; // Import ApiClient to use its userId
 import { ref, watchEffect, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { UserSession } from './classes/UserSession';
-import NotificationDropdown from '@/components/common/NotificationDropdown.vue'; // <<< NEW IMPORT
-import { useProjectStore } from './stores/ProjectStore'; // Import store for alerts
+import { UserSession } from './classes/UserSession.js';
+import NotificationDropdown from '@/components/common/NotificationDropdown.vue'; // <<< Updated extension
+import { useProjectStore } from './stores/ProjectStore.js'; // Import store for alerts
 
 const router = useRouter();
 const route = useRoute();
@@ -21,10 +21,7 @@ const isDarkMode = ref(false); // Default to false (Light Theme)
 // const alertCount = computed(() => projectStore.userProjects.length > 0 ? 1 : 0); // Mocked alert count for demonstration
 
 // Local variable to hold the SSE connection instance
-const eventSource = ref<EventSource | null>(null);
-
-
-// Watch for changes in the route/login state to determine if the navbar should show
+const eventSource = ref(null);
 
 
 // Theme Toggle Function
@@ -36,7 +33,7 @@ const toggleTheme = () => {
 
 
 // Function to establish and manage the SSE connection
-const startSSE = (userId: string) => {
+const startSSE = (userId) => {
     // 1. Close existing connection if it exists
     if (eventSource.value) {
         eventSource.value.close();
@@ -101,14 +98,12 @@ watchEffect(() => {
 });
 
 
-
 // A simple navigation function for the top-level view
 const goToHome = () => {
     if (session.isLoggedIn) {
         router.push('/');
     }
 };
-
 
 
 const handleLogout = () => {
@@ -168,6 +163,7 @@ const profileInitials = computed(() => {
     </main>
   </div>
 </template>
+
 
 
 

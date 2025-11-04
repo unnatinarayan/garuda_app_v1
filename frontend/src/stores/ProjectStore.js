@@ -1,19 +1,17 @@
-// ProjectStore.ts
-
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 // STATIC IMPORTS FOR CLASSES
-import { ProjectFormData } from '../classes/ProjectFormData';
-import { AreaOfInterestDraft } from '../classes/AreaOfInterestDraft';
-import { ApiClient } from '../api/ApiClient';
+import { ProjectFormData } from '../classes/ProjectFormData.js';
+import { AreaOfInterestDraft } from '../classes/AreaOfInterestDraft.js';
+import { ApiClient } from '../api/ApiClient.js';
+import { UserSession } from '../classes/UserSession.js'; // Added UserSession import
 
 const api = ApiClient.getInstance();
 
 /**
  * Helper function to map the complex backend structure to the simpler ProjectFormData class structure.
- * This is now synchronous, relying on static imports.
  */
-function mapBackendToForm(data: any): ProjectFormData {
+function mapBackendToForm(data) {
 
     // Instantiate the ProjectFormData class
     const form = new ProjectFormData(true, data.id); // Set to update mode
@@ -30,7 +28,7 @@ function mapBackendToForm(data: any): ProjectFormData {
 
     // Step 2 & 3 Mapping (AOIs and Mappings)
     let aoiCounter = 1;
-    form.aoiDrafts = data.aois.map((aoi: any) => {
+    form.aoiDrafts = data.aois.map((aoi) => {
         // Instantiate the AreaOfInterestDraft class
         const aoiDraft = new AreaOfInterestDraft(
             aoi.name,
@@ -43,7 +41,7 @@ function mapBackendToForm(data: any): ProjectFormData {
         aoiDraft.geomProperties = aoi.geom_properties || {};
 
         // Map algorithms
-        aoi.mappedAlgorithms.forEach((algo: any) => {
+        aoi.mappedAlgorithms.forEach((algo) => {
             aoiDraft.mapAlgorithm(
                 algo.algo_id, // <-- Use the STRING algo_id for mapping
                 algo.algo_id, // Use algo_id string as the display name
@@ -54,7 +52,7 @@ function mapBackendToForm(data: any): ProjectFormData {
     });
 
     // Step 4 Mapping (Users)
-    form.users = data.users.map((u: any) => ({
+    form.users = data.users.map((u) => ({
         userId: u.user_id,
         role: u.role,
         username: u.user_id,
@@ -68,13 +66,12 @@ function mapBackendToForm(data: any): ProjectFormData {
  * ProjectStore: Manages the state and logic related to Project instances.
  */
 export const useProjectStore = defineStore('project', () => {
-    // ... The rest of the Pinia store remains the same ...
 
     // State: Holds the active form object and the list of projects
-    const projectForm = ref<ProjectFormData>(new ProjectFormData());
-    const userProjects = ref<any[]>([]);
+    const projectForm = ref(new ProjectFormData());
+    const userProjects = ref([]);
 
-    const activeAlerts = ref<any[]>([]); // New state for alerts
+    const activeAlerts = ref([]); // New state for alerts
 
     // Getters
     const isEditing = computed(() => projectForm.value.isUpdateMode);
@@ -89,8 +86,7 @@ export const useProjectStore = defineStore('project', () => {
         projectForm.value = new ProjectFormData(false, null);
     }
 
-    async function submitProject(): Promise<void> {
-        // ... (existing submitProject logic) ...
+    async function submitProject() {
         const bundle = projectForm.value.toBackendBundle();
 
         // --- ADD DEBUG LOGGING ---
@@ -126,9 +122,7 @@ export const useProjectStore = defineStore('project', () => {
 
     }
 
-    async function fetchUserProjects(): Promise<void> {
-        // ... (existing fetchUserProjects logic) ...
-
+    async function fetchUserProjects() {
         try {
             const projects = await api.getProjects();
             // --- ADD DEBUG LOGGING ---
@@ -141,7 +135,7 @@ export const useProjectStore = defineStore('project', () => {
         }
     }
 
-    async function loadProjectForUpdate(projectId: number): Promise<void> {
+    async function loadProjectForUpdate(projectId) {
         try {
             const response = await api.getProjectDetails(projectId);
             projectForm.value = mapBackendToForm(response);
@@ -151,11 +145,11 @@ export const useProjectStore = defineStore('project', () => {
         }
     }
 
-    async function deleteProject(projectId: number): Promise<void> {
+    async function deleteProject(projectId) {
         await api.deleteProject(projectId);
     }
 
-    function addAlert(alert: any) {
+    function addAlert(alert) {
         // Ensure unique alerts if loading from Redis/SSE simultaneously
         if (!activeAlerts.value.some(a => a.id === alert.id)) {
             // Add to the beginning of the list (newest first)
@@ -163,7 +157,7 @@ export const useProjectStore = defineStore('project', () => {
         }
     }
 
-    async function markAlertAsRead(alertId: number) {
+    async function markAlertAsRead(alertId) {
         const session = UserSession.getInstance();
         const userId = session.getUserId();
 
@@ -211,11 +205,11 @@ export const useProjectStore = defineStore('project', () => {
 
         projectName: computed({
             get: () => projectForm.value.projectName,
-            set: (val: string) => { projectForm.value.projectName = val; }
+            set: (val) => { projectForm.value.projectName = val; }
         }),
         description: computed({
             get: () => projectForm.value.description,
-            set: (val: string | null) => { projectForm.value.description = val; }
+            set: (val) => { projectForm.value.description = val; }
         }),
 
     };

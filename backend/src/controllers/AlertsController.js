@@ -1,23 +1,13 @@
-// backend/src/controllers/AlertsController.ts
-
-
-
-// backend/src/controllers/AlertsController.ts
-
 import { Router } from 'express';
 
-// which handles the difference between CommonJS and ES Modules better.
-import type { Request, Response, NextFunction } from 'express';
-
-import { AlertsService } from '../services/AlertsService.ts';
-import type { NewAlertPayload } from '../services/AlertsService.ts';
+import { AlertsService } from '../services/AlertsService.js';
 
 /**
  * AlertsController: Manages all API endpoints related to alerts.
  */
 export class AlertsController {
-    public router: Router;
-    private alertsService: AlertsService;
+    router;
+    alertsService;
 
     constructor() {
         this.router = Router();
@@ -25,7 +15,7 @@ export class AlertsController {
         this.initializeRoutes();
     }
 
-    private initializeRoutes() {
+    initializeRoutes() {
         // POST /api/alerts - Endpoint to insert a new alert
         this.router.post('/', this.recordAlert);
 
@@ -35,10 +25,10 @@ export class AlertsController {
     /**
      * Express handler to record a new alert based on the request body.
      */
-    private recordAlert = async (req: Request, res: Response, next: NextFunction) => {
+    recordAlert = async (req, res, next) => {
         try {
-            // TypeScript casting for clarity, matching the service interface
-            const payload: NewAlertPayload = req.body;
+            // No need for TypeScript casting
+            const payload = req.body;
 
             // Assuming the project_id, aoi_id, and algo_id are valid FKs
             // This relies on the database to throw an error if the FKs are invalid.
@@ -61,7 +51,7 @@ export class AlertsController {
         } catch (error) {
             // Pass the error to the Express error handler middleware
             console.error('Error in recordAlert:', error);
-            const errorMessage = (error as Error).message;
+            const errorMessage = (error).message;
             // Use 400 for bad data (missing fields, invalid FKs)
             res.status(400).json({ error: errorMessage });
         }

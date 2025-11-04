@@ -1,54 +1,36 @@
-// ProjectService.ts
+import { DBClient } from '../db/DBClient.js';
 
+import { ProjectModel } from '../models/ProjectModel.js';
+// REMOVED: import type { ProjectData } from '../models/ProjectModel.js';
 
-import { DBClient } from '../db/DBClient.ts';
+import { AreaOfInterestModel } from '../models/AreaOfInterestModel.js';
+// REMOVED: import type { AreaOfInterestData } from '../models/AreaOfInterestModel.js';
 
-import { ProjectModel } from '../models/ProjectModel.ts';
-import type { ProjectData } from '../models/ProjectModel.ts';
+// REMOVED: import type { GeoJsonPolygon } from '../types/GeoJson.js';
 
-import { AreaOfInterestModel } from '../models/AreaOfInterestModel.ts';
-import type { AreaOfInterestData } from '../models/AreaOfInterestModel.ts';
-
-import type { GeoJsonPolygon } from '../types/GeoJson.ts';
-
-import { AoiAlgorithmMappingModel } from '../models/AoiAlgorithmMappingModel.ts';
-import { UsersToProjectModel } from '../models/UsersToProjectModel.ts';
-import type { UsersToProjectData } from '../models/UsersToProjectModel.ts';
-import { AlgorithmCatalogueModel } from '../models/AlgorithmCatalogueModel.ts';
-import type { AlgorithmCatalogueData } from '../models/AlgorithmCatalogueModel.ts';
+// REMOVED: import { AoiAlgorithmMappingModel } from '../models/AoiAlgorithmMappingModel.js';
+// REMOVED: import { UsersToProjectModel } from '../models/UsersToProjectModel.js';
+// REMOVED: import type { UsersToProjectData } from '../models/UsersToProjectModel.js';
+import { AlgorithmCatalogueModel } from '../models/AlgorithmCatalogueModel.js';
+// REMOVED: import type { AlgorithmCatalogueData } from '../models/AlgorithmCatalogueModel.js';
 
 const db = DBClient.getInstance();
 
-// Define a structure for the complete data bundle coming from the frontend's 4-step process
-export interface ProjectCreationBundle {
-    projectBasicInfo: {
-        projectName: string;
-        description: string | null;
-        auxData: Record<string, any> | null;
-    };
-    aoiData: {
-        aoiId: string;
-        name: string;
-        geomGeoJson: GeoJsonPolygon;
-        geomProperties: Record<string, any> | null;
-        mappedAlgorithms: { algoId: string; configArgs: Record<string, any> }[]; // Note: algoId is now the STRING algo_id
-    }[];
-    userData: { userId: string; role: string }[];
-}
-
 /**
- * ProjectService: Manages complex business logic and database transactions 
+ * ProjectService: Manages complex business logic and database transactions
  * across multiple models for Project management.
  */
 export class ProjectService {
 
     /**
+     * @param {Object} bundle 
+     * @param {string} currentUserId
+     * @returns {Promise<ProjectModel>}
      */
-
-    public async createProject(
-        bundle: ProjectCreationBundle,
-        currentUserId: string
-    ): Promise<ProjectModel> {
+    async createProject(
+        bundle,
+        currentUserId
+    ) {
         // Start a database client connection to manage the transaction
         const client = await db.pool.connect();
         try {
@@ -60,14 +42,14 @@ export class ProjectService {
             // 1. Create the Project record
             const projectResult = await client.query(`
                 INSERT INTO project
-                (name, description, created_by_userid, auxdata) -- <-- Updated column name
+                (name, description, created_by_userid, auxdata)
                 VALUES ($1, $2, $3, $4)
-                RETURNING id, creation_timestamp; -- <-- Updated column name
+                RETURNING id, creation_timestamp;
             `, [
-                projectName,           // $1: name (User Input)
-                description,           // $2: description (User Input)
-                currentUserId,         // $3: created_by_userid (Server Determined)
-                auxData                // $4: auxdata (User Input JSONB)
+                projectName,
+                description,
+                currentUserId,
+                auxData
             ]);
 
             const projectId = projectResult.rows[0].id;
@@ -100,12 +82,11 @@ export class ProjectService {
         SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
     )
     INSERT INTO area_of_interest
-    (project_id, aoi_id, name, geom, geom_properties) -- <-- Removed 'publish_flag' and 'auxdata' used differently
+    (project_id, aoi_id, name, geom, geom_properties)
     SELECT
         $1, $2, $3,
         CASE
             -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
-            -- If it is, we MUST buffer it to comply with the table's Polygon constraint.
             WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
                 -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
                 ST_Transform(
@@ -121,16 +102,16 @@ export class ProjectService {
         END,
         $6
     FROM original_geom
-    RETURNING id; -- We still return the PK ID for internal tracking, but the lookup is by aoi_id
+    RETURNING id;
 `;
 
                 const aoiResult = await client.query(aoiQuery, [
-                    projectId,             // $1
-                    aoiItem.aoiId,         // $2 (The Unique String ID)
-                    aoiItem.name,          // $3
-                    geomString,            // $4 (GeoJSON String)
-                    buffer,                // $5 (Buffer Distance - used in CASE)
-                    aoiItem.geomProperties, // $6 (JSONB)
+                    projectId,
+                    aoiItem.aoiId,
+                    aoiItem.name,
+                    geomString,
+                    buffer,
+                    aoiItem.geomProperties,
                 ]);
 
 
@@ -143,10 +124,10 @@ export class ProjectService {
                         VALUES ($1, $2, $3, $4);
                     `;
                     await client.query(mappingQuery, [
-                        projectId,            // $1
-                        aoiItem.aoiId,        // $2 (The Unique String ID)
-                        algo.algoId,          // $3 (The Algorithm STRING ID)
-                        algo.configArgs       // $4
+                        projectId,
+                        aoiItem.aoiId,
+                        algo.algoId,
+                        algo.configArgs
                     ]);
                 }
 
@@ -186,21 +167,25 @@ export class ProjectService {
             await client.query('ROLLBACK');
             console.error('Project creation failed, transaction rolled back:', error);
             // Re-throw with more specific error for debugging
-            throw new Error(`Transaction failed. Details: ${(error as any).detail || (error as Error).message}`);
+            throw new Error(`Transaction failed. Details: ${(error).detail || (error).message}`);
         } finally {
             client.release();
         }
     }
 
     /**
-     * Executes a complete transaction to update an existing project, 
+     * Executes a complete transaction to update an existing project,
      * including project info, AOIs, Algo Mappings, and User Assignments.
+     * @param {number} projectId
+     * @param {Object} bundle
+     * @param {string} currentUserId
+     * @returns {Promise<ProjectModel>}
      */
-    public async updateProject(
-        projectId: number,
-        bundle: ProjectCreationBundle,
-        currentUserId: string
-    ): Promise<ProjectModel> {
+    async updateProject(
+        projectId,
+        bundle,
+        currentUserId
+    ) {
         // 1. Start a database client connection to manage the transaction
         const client = await db.pool.connect();
         try {
@@ -223,7 +208,6 @@ export class ProjectService {
 
             // --------------------- Step 2 & 3: AOI and Algo Mapping Update ---------------------
             // AOI/Mapping Update Strategy: Delete all existing AOIs/Mappings and re-insert the new list
-            // NOTE: Due to CASCADE DELETE from project table on aoi_algorithm_mapping, deleting AOI is enough.
 
             // A. Clean up old AOIs (which also cascades to aoi_algorithm_mapping)
             const deletedAoiCount = await AreaOfInterestModel.deleteByProjectId(client, projectId);
@@ -246,7 +230,6 @@ export class ProjectService {
         $1, $2, $3,
         CASE
             -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
-            -- If it is, we MUST buffer it to comply with the table's Polygon constraint.
             WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
                 -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
                 ST_Transform(
@@ -266,12 +249,12 @@ export class ProjectService {
 `;
 
                 const aoiResult = await client.query(aoiQuery, [
-                    projectId,             // $1
-                    aoiItem.aoiId,         // $2
-                    aoiItem.name,          // $3
-                    geomString,            // $4 (GeoJSON String)
-                    buffer,                // $5 (Buffer Distance - used in CASE)
-                    aoiItem.geomProperties, // $6 (JSONB)
+                    projectId,
+                    aoiItem.aoiId,
+                    aoiItem.name,
+                    geomString,
+                    buffer,
+                    aoiItem.geomProperties,
                 ]);
                 // const aoiPkId = aoiResult.rows[0].id; // Not strictly needed
 
@@ -282,10 +265,10 @@ export class ProjectService {
                         VALUES ($1, $2, $3, $4);
                     `;
                     await client.query(mappingQuery, [
-                        projectId,            // $1
-                        aoiItem.aoiId,        // $2
-                        algo.algoId,          // $3 (The Algorithm STRING ID)
-                        algo.configArgs       // $4
+                        projectId,
+                        aoiItem.aoiId,
+                        algo.algoId,
+                        algo.configArgs
                     ]);
                 }
             }
@@ -295,7 +278,11 @@ export class ProjectService {
             const usersToKeep = bundle.userData.map(u => u.userId);
 
             // A. Delete users that were REMOVED in the frontend UI
-            await UsersToProjectModel.deleteExcludedUsers(client, projectId, usersToKeep);
+            await client.query(`
+                DELETE FROM users_to_project
+                WHERE project_id = $1
+                AND user_id NOT IN (SELECT unnest($2::text[]));
+            `, [projectId, usersToKeep]);
 
             // B. Upsert (Insert or Update Role) for the remaining/new users
             for (const user of bundle.userData) {
@@ -314,7 +301,7 @@ export class ProjectService {
         } catch (error) {
             await client.query('ROLLBACK');
             console.error('Project update failed, transaction rolled back:', error);
-            throw new Error(`Transaction failed. Details: ${(error as any).detail || (error as Error).message}`);
+            throw new Error(`Transaction failed. Details: ${(error).detail || (error).message}`);
         } finally {
             client.release();
         }
@@ -322,21 +309,22 @@ export class ProjectService {
 
 
     /**
-     * Fetches all projects associated with a given user ID, 
+     * Fetches all projects associated with a given user ID,
      * using the users_to_project table.
+     * @param {string} userId
+     * @returns {Promise<any[]>}
      */
-    public async getUserProjects(userId: string): Promise<ProjectData[]> {
+    async getUserProjects(userId) {
         const query = `
             SELECT
-                p.id, p.name as project_name, p.description, p.creation_timestamp, p.last_modified_timestamp, p.created_by_userid, p.auxdata, -- <-- Updated column names
+                p.id, p.name as project_name, p.description, p.creation_timestamp, p.last_modified_timestamp, p.created_by_userid, p.auxdata,
                 up.role
             FROM project p
             JOIN users_to_project up ON p.id = up.project_id
             WHERE up.user_id = $1
-            ORDER BY p.last_modified_timestamp DESC; -- <-- Updated column name
+            ORDER BY p.last_modified_timestamp DESC;
         `;
-        // Note: ProjectData interface is now updated in ProjectModel.ts
-        const result = await db.query<ProjectData & { project_name: string, role: string }>(query, [userId]);
+        const result = await db.query(query, [userId]);
 
         // Return projects with the user's role included (for display purposes)
         return result.rows.map(row => ({
@@ -347,29 +335,29 @@ export class ProjectService {
 
     /**
      * Fetches a single project and all its associated data (AOIs, Mappings, Users).
+     * @param {number} projectId
+     * @returns {Promise<any>}
      */
-    public async getProjectDetails(projectId: number): Promise<any> {
+    async getProjectDetails(projectId) {
         const client = await db.pool.connect();
         try {
             // 1. Fetch Project Details
             const projectResult = await client.query(`
-                SELECT id, name as project_name, description, creation_timestamp, last_modified_timestamp, created_by_userid, auxdata FROM project WHERE id = $1; -- <-- Updated column names
+                SELECT id, name as project_name, description, creation_timestamp, last_modified_timestamp, created_by_userid, auxdata FROM project WHERE id = $1;
             `, [projectId]);
             if (projectResult.rows.length === 0) return null;
             const project = projectResult.rows[0];
 
-            // 2. Fetch Users (Unchanged)
+            // 2. Fetch Users
             const userResult = await client.query(`
                 SELECT user_id, role FROM users_to_project WHERE project_id = $1;
             `, [projectId]);
 
             // 3. Fetch AOIs and 4. Fetch Mapped Algorithms for each AOI
-            // Re-use the logic from AreaOfInterestModel.findByProjectId and getMappedAlgorithms
             const aois = await AreaOfInterestModel.findByProjectId(projectId);
 
             const aoisWithAlgos = [];
             for (const aoiInstance of aois) {
-                // The getMappedAlgorithms logic in AreaOfInterestModel.ts is updated
                 const algorithms = await aoiInstance.getMappedAlgorithms(client);
 
                 aoisWithAlgos.push({
@@ -401,8 +389,10 @@ export class ProjectService {
 
     /**
      * Deletes a project and all related records (cascade deletes handle most).
+     * @param {number} projectId
+     * @returns {Promise<boolean>}
      */
-    public async deleteProject(projectId: number): Promise<boolean> {
+    async deleteProject(projectId) {
         // Due to CASCADE DELETE constraints, deleting from the parent (project) table
         // will automatically clean up records in: area_of_interest, users_to_project, aoi_algorithm_mapping, alerts.
 
@@ -415,22 +405,17 @@ export class ProjectService {
 
     /**
      * Fetches the entire algorithm catalogue.
+     * @returns {Promise<any[]>}
      */
-
-
-    public async getAlgorithmCatalogue(): Promise<AlgorithmCatalogueData[]> {
+    async getAlgorithmCatalogue() {
         const algorithmModels = await AlgorithmCatalogueModel.findAll();
 
-
         return algorithmModels.map(algo => ({
-            id: algo.id!,
+            id: algo.id,
             algo_id: algo.algoId,
             args: algo.defaultArgs,
             description: algo.description,
             category: algo.category,
         }));
     }
-
-
-    // Add methods for updateProject, deleteProject, etc. here...
 }

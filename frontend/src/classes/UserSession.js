@@ -1,24 +1,22 @@
-// frontend/src/classes/UserSession.ts
-
-import { ApiClient } from '../api/ApiClient';
+import { ApiClient } from '../api/ApiClient.js';
 
 /**
  * UserSession: Manages the logged-in state and user details.
  */
 export class UserSession {
-    public userId: string | null = null;
-    public username: string | null = null;
-    public isLoggedIn: boolean = false;
+    userId = null;
+    username = null;
+    isLoggedIn = false;
     
-    private static instance: UserSession;
+    static instance;
 
-    private static readonly STORAGE_KEY = 'garuda_user_session';
+    // REMOVED: static readonly STORAGE_KEY = 'garuda_user_session';
 
-    private constructor() {
+    constructor() {
         this.loadSession();
     }
 
-    public static getInstance(): UserSession {
+    static getInstance() {
         if (!UserSession.instance) {
             UserSession.instance = new UserSession();
         }
@@ -26,7 +24,7 @@ export class UserSession {
     }
 
 
-    private saveSession(): void {
+    saveSession() {
         const data = {
             userId: this.userId,
             username: this.username,
@@ -36,7 +34,7 @@ export class UserSession {
     }
 
 
-    private loadSession(): void {
+    loadSession() {
         const storedData = localStorage.getItem(UserSession.STORAGE_KEY);
         if (storedData) {
             try {
@@ -57,7 +55,7 @@ export class UserSession {
     }
 
     
-    public async attemptLogin(username: string, password: string): Promise<boolean> {
+    async attemptLogin(username, password) {
         try {
             const api = ApiClient.getInstance();
             // CRITICAL: Get username from API response
@@ -75,7 +73,7 @@ export class UserSession {
         }
     }
 
-    public async attemptSignup(username: string, password: string): Promise<boolean> {
+    async attemptSignup(username, password) {
         try {
             const api = ApiClient.getInstance();
             await api.signup(username, password);
@@ -86,7 +84,7 @@ export class UserSession {
         }
     }
 
-    public logout(): void {
+    logout() {
         this.userId = null;
         this.username = null;
         this.isLoggedIn = false;
@@ -95,3 +93,6 @@ export class UserSession {
         localStorage.removeItem(UserSession.STORAGE_KEY);
     }
 }
+
+// FIX: Define the static constant outside the class body for pure JS compatibility
+UserSession.STORAGE_KEY = 'garuda_user_session';

@@ -1,10 +1,9 @@
-<!-- auth/LoginForm.vue: -->
+<!-- LoginForm.vue -->
 
-
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { UserSession } from '@/classes/UserSession'; 
+import { UserSession } from '@/classes/UserSession.js'; // Updated extension
 
 const router = useRouter();
 const session = UserSession.getInstance();

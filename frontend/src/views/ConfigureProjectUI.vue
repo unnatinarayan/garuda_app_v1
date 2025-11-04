@@ -1,17 +1,17 @@
 // ConfigureProjectUI.vue
 
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useProjectStore } from '@/stores/ProjectStore';
+import { useProjectStore } from '@/stores/ProjectStore.js';
 import { storeToRefs } from 'pinia'; // <-- NEW IMPORT
 import "tailwindcss";
 
 
-const props = defineProps<{
+const props = defineProps({
     // The router automatically passes the ':id' parameter as a string prop named 'id'
-    id?: string; 
-}>();
+    id: String, 
+});
 
 // Component Imports
 import Step1BasicInfo from '@/components/steps/Step1BasicInfo.vue';
@@ -34,9 +34,7 @@ const currentStep = computed(() => projectStore.currentStep);
 const isFinalStep = computed(() => currentStep.value === 4);
 const isUpdateMode = computed(() => projectForm.value.isUpdateMode);
 
-const projectIdParam = props.id ? parseInt(props.id) : (route.params.id ? parseInt(route.params.id as string) : null);
-
-// const projectIdParam = route.params.id ? parseInt(route.params.id as string) : null;
+const projectIdParam = props.id ? parseInt(props.id) : (route.params.id ? parseInt(route.params.id) : null);
 
 
 onMounted(async () => {
@@ -47,7 +45,7 @@ onMounted(async () => {
             await projectStore.loadProjectForUpdate(projectIdParam);
             isMenuMode.value = true; // Show the menu initially for updates
         } catch (error) {
-            alert('Error loading project: ' + (error as Error).message);
+            alert('Error loading project: ' + (error).message);
             router.push('/');
         } finally {
             isDataLoading.value = false;
@@ -62,8 +60,8 @@ onMounted(async () => {
 /**
  * NEW: Switches from the menu card view to the specific step form view.
  */
-const startStep = (stepNumber: number) => {
-    projectForm.currentStep = stepNumber; // Directly set the step number on the class object
+const startStep = (stepNumber) => {
+    projectForm.value.currentStep = stepNumber; // Directly set the step number on the class object
     isMenuMode.value = false; // Switch to form view
 };
 
@@ -118,8 +116,8 @@ const nextStep = () => {
 };
 
 // Helper to determine active/visited status for styling the step indicators
-const isStepActive = (step: number) => currentStep.value === step && !isMenuMode.value;
-const isStepVisited = (step: number) => step < currentStep.value || (step === currentStep.value && !isMenuMode.value);
+const isStepActive = (step) => currentStep.value === step && !isMenuMode.value;
+const isStepVisited = (step) => step < currentStep.value || (step === currentStep.value && !isMenuMode.value);
 
 
 </script>
@@ -244,6 +242,7 @@ const isStepVisited = (step: number) => step < currentStep.value || (step === cu
         </div>
     </div>
 </template>
+
 
 <style scoped>
 .configure-project-ui { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 50px; }

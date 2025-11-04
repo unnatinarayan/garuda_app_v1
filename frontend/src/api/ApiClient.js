@@ -1,17 +1,16 @@
-// ApiClient.ts
+// ApiClient.js
 
 import axios from 'axios';
-import type { AxiosInstance } from 'axios';
-import type { ProjectCreationBundle } from '../types/ProjectTypes';
+
 /**
  * ApiClient: Manages all API calls, including setting headers for authentication.
  */
 export class ApiClient {
-    private client: AxiosInstance;
-    private static instance: ApiClient;
-    private userId: string | null = null;
+    client;
+    static instance;
+    userId = null;
     
-    private constructor() {
+    constructor() {
         this.client = axios.create({
             baseURL: 'http://localhost:3000/api', // Backend base URL
             headers: {
@@ -20,32 +19,32 @@ export class ApiClient {
         });
     }
 
-    public static getInstance(): ApiClient {
+    static getInstance() {
         if (!ApiClient.instance) {
             ApiClient.instance = new ApiClient();
         }
         return ApiClient.instance;
     }
 
-    public setUserId(userId: string): void {
+    setUserId(userId) {
         this.userId = userId;
         this.client.defaults.headers['X-User-ID'] = userId;
     }
 
-    public getUserId(): string | null {
+    getUserId() {
         return this.userId;
     }
     
     // --- Auth Endpoints ---
-    public async login(username: string, password: string): Promise<{ userId: string, username: string }> { 
+    async login(username, password) {
         const response = await this.client.post('/auth/login', { username, password });
         const { userId, username: returnedUsername } = response.data; // Destructure username
         this.setUserId(userId);
         // CRITICAL: Return username to be stored in UserSession
-        return { userId, username: returnedUsername }; 
+        return { userId, username: returnedUsername };
     }
 
-    public async signup(username: string, password: string): Promise<{ userId: string, username: string }> {
+    async signup(username, password) {
         const response = await this.client.post('/auth/signup', { username, password });
         const { userId, username: returnedUsername } = response.data;
         return { userId, username: returnedUsername };
@@ -54,32 +53,32 @@ export class ApiClient {
     // --- Project Endpoints ---
     
 
-    public async createProject(bundle: ProjectCreationBundle): Promise<any> {
+    async createProject(bundle) {
         return this.client.post('/projects', bundle);
     }
 
     // NEW: Update existing project
-    public async updateProject(projectId: number, bundle: ProjectCreationBundle): Promise<any> {
+    async updateProject(projectId, bundle) {
         return this.client.put(`/projects/${projectId}`, bundle);
     }
 
     // NEW: Fetch algorithm catalogue
-    public async getAlgorithmCatalogue(): Promise<any[]> {
+    async getAlgorithmCatalogue() {
         const response = await this.client.get('/projects/algorithms');
         return response.data;
     }
     
-    public async getProjects(): Promise<any[]> {
+    async getProjects() {
         const response = await this.client.get('/projects');
         return response.data;
     }
     
-    public async getProjectDetails(projectId: number): Promise<any> {
+    async getProjectDetails(projectId) {
         const response = await this.client.get(`/projects/${projectId}`);
         return response.data;
     }
     
-    public async deleteProject(projectId: number): Promise<void> {
+    async deleteProject(projectId) {
         await this.client.delete(`/projects/${projectId}`);
     }
     

@@ -1,36 +1,33 @@
-// backend/src/models/UserModel.ts
-
-import { DBClient } from '../db/DBClient.ts';
+import { DBClient } from '../db/DBClient.js';
 
 const db = DBClient.getInstance();
-
-export interface UserData {
-    user_id: string;
-    username: string | null;
-    password_hash: string | null;
-}
 
 /**
  * UserModel: Handles persistence logic for the 'users' table.
  */
 export class UserModel {
-    public userId: string;
-    public username: string | null;
-    public passwordHash: string | null;
+    userId;
+    username = null;
+    passwordHash = null;
 
-    constructor(data: UserData) {
+    /**
+     * @param {Object} data 
+     */
+    constructor(data) {
         this.userId = data.user_id;
         this.username = data.username || data.user_id;
         // In a real app, the hash should be stored/validated securely
-        this.passwordHash = data.password_hash || null; 
+        this.passwordHash = data.password_hash || null;
     }
 
     /**
      * Finds a user by their unique user_id.
+     * @param {string} userId
+     * @returns {Promise<UserModel | null>}
      */
-    public static async findById(userId: string): Promise<UserModel | null> {
+    static async findById(userId) {
         const query = `SELECT user_id, username, password_hash FROM users WHERE user_id = $1;`;
-        const result = await db.query<UserData>(query, [userId]);
+        const result = await db.query(query, [userId]);
         
         if (result.rows.length === 0) return null;
         return new UserModel(result.rows[0]);
@@ -38,8 +35,9 @@ export class UserModel {
 
     /**
      * Inserts a new user into the database (Sign Up).
+     * @returns {Promise<UserModel>}
      */
-    public async save(): Promise<UserModel> {
+    async save() {
         const query = `
             INSERT INTO users (user_id, username, password_hash)
             VALUES ($1, $2, $3)

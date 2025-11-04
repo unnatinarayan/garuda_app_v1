@@ -1,33 +1,22 @@
-// frontend/src/classes/AreaOfInterestDraft.ts
-
-export interface GeoJsonPolygon {
-    type: 'Polygon';
-    coordinates: number[][][];
-}
-
-interface MappedAlgorithm {
-    algoId: string; // The STRING algo_id from the catalogue (e.g., 'NDVI_CHANGE')
-    name: string;   // For display in the UI (e.g., 'NDVI_CHANGE')
-    configArgs: Record<string, any>; // Specific arguments for this AOI/Algo
-}
+// AreaOfInterestDraft.js
 
 export class AreaOfInterestDraft {
-    public clientAoiId: number;
-    public name: string;
-    public aoiId: string;
-    public geometry: GeoJsonPolygon;
-    public mappedAlgorithms: MappedAlgorithm[] = [];
-    public bufferDistance: number | null; // NEW: Holds buffer distance in meters
-    public geometryType: 'Polygon' | 'LineString' | 'Point'; // NEW: To know if buffer is needed
-    public geomProperties: Record<string, any> = {};
+    clientAoiId;
+    name;
+    aoiId;
+    geometry;
+    mappedAlgorithms = [];
+    bufferDistance = null; // NEW: Holds buffer distance in meters
+    geometryType = 'Polygon'; // NEW: To know if buffer is needed
+    geomProperties = {};
 
 
     constructor(
-        name: string,
-        geometry: GeoJsonPolygon,
-        clientAoiId: number,
-        geometryType: 'Polygon' | 'LineString' | 'Point' = 'Polygon', // Default added
-        bufferDistance: number | null = null
+        name,
+        geometry,
+        clientAoiId,
+        geometryType = 'Polygon', // Default added
+        bufferDistance = null
     ) {
         this.clientAoiId = clientAoiId;
         this.name = name;
@@ -38,7 +27,7 @@ export class AreaOfInterestDraft {
     }
 
 
-    public mapAlgorithm(algoId: string, name: string, configArgs: Record<string, any> = {}): void { // <-- algoId is now string
+    mapAlgorithm(algoId, name, configArgs = {}) { // <-- algoId is now string
         const existing = this.mappedAlgorithms.find(a => a.algoId === algoId);
         if (existing) {
             existing.configArgs = configArgs;
@@ -48,7 +37,7 @@ export class AreaOfInterestDraft {
     }
 
 
-    public toBackendData(): any {
+    toBackendData() {
         // Prepare geomProperties for the backend (ProjectService)
         const geomProps = {
             ...this.geomProperties,

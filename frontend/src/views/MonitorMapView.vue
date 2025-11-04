@@ -1,20 +1,18 @@
-<!-- // MonitorMapView.vue  -->
-
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ApiClient } from '@/api/ApiClient';
+import { ApiClient } from '@/api/ApiClient.js';
 import MapVisualization from '@/components/map/MapVisualization.vue';
 
-const props = defineProps<{
-    id: string; // The project ID from the route parameter
-}>();
+const props = defineProps({
+    id: String, // The project ID from the route parameter
+});
 
 const router = useRouter();
 const apiClient = ApiClient.getInstance();
 
 const isLoading = ref(true);
-const project = ref<any>(null);
+const project = ref(null);
 
 onMounted(async () => {
     try {

@@ -1,10 +1,11 @@
-<script setup lang="ts">
-import { ProjectFormData } from '@/classes/ProjectFormData';
+<script setup>
+// REMOVED: import { ProjectFormData } from '@/classes/ProjectFormData.js';
+import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { ref, computed } from 'vue';
 
-const props = defineProps<{
-  projectData: ProjectFormData;
-}>();
+const props = defineProps({
+  projectData: ProjectFormData,
+});
 
 const newUser = ref('');
 const newRole = ref('viewer');
@@ -27,7 +28,7 @@ const addUser = () => {
     }
 };
 
-const removeUser = (userId: string) => {
+const removeUser = (userId) => { // REMOVED: : string
     // Prevent removing the initial creator (simulated)
     if (userId === 'current_user_id') {
         alert("The creator cannot be removed.");
@@ -38,32 +39,66 @@ const removeUser = (userId: string) => {
 </script>
 
 <template>
-  <div>
-    <h3>Step 4: Add Users and Roles</h3>
+  <div class="p-4 bg-gray-800 rounded-lg text-white">
+    <h3 class="text-xl font-bold mb-4 text-white">Step 4: Add Users and Roles</h3>
 
-    <div class="user-entry">
-        <input type="text" v-model="newUser" placeholder="User ID / Email" />
-        <select v-model="newRole">
-            <option v-for="role in availableRoles" :key="role" :value="role">{{ role }}</option>
+    <div class="user-entry flex gap-3 mb-6 p-4 bg-gray-700 rounded-lg shadow-inner">
+        <input 
+            type="text" 
+            v-model="newUser" 
+            placeholder="User ID / Email" 
+            class="flex-grow p-2 bg-gray-600 text-white rounded border border-gray-500 focus:border-cyan-400"
+        />
+        <select 
+            v-model="newRole" 
+            class="p-2 bg-gray-600 text-white rounded border border-gray-500"
+        >
+            <option v-for="role in availableRoles" :key="role" :value="role">{{ role.charAt(0).toUpperCase() + role.slice(1) }}</option>
         </select>
-        <button @click="addUser" :disabled="!canAddUser">Add User</button>
+        <button 
+            @click="addUser" 
+            :disabled="!canAddUser"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed"
+        >
+            Add User
+        </button>
     </div>
     
-    <h4>Current Collaborators</h4>
-    <div class="user-list">
-        <div v-for="user in projectData.users" :key="user.userId" class="user-item">
-            <span>{{ user.username }} ({{ user.role }})</span>
-            <button v-if="user.userId !== 'current_user_id'" @click="removeUser(user.userId)" class="remove-btn">x</button>
-            <span v-else class="owner-tag">Creator (Owner)</span>
+    <h4 class="text-lg font-semibold text-cyan-400 mb-3">Current Collaborators ({{ projectData.users.length }})</h4>
+    <div class="user-list space-y-2 max-h-48 overflow-y-auto pr-2">
+        <div v-for="user in projectData.users" :key="user.userId" class="user-item flex justify-between items-center p-3 bg-gray-700 rounded shadow-md border-l-4"
+             :class="{'border-green-500': user.role === 'owner', 'border-yellow-500': user.role === 'analyst', 'border-blue-500': user.role === 'viewer'}"
+        >
+            <span class="font-medium text-white">{{ user.username }} 
+                <span class="text-sm px-2 py-0.5 rounded-full"
+                      :class="{'bg-green-700 text-green-200': user.role === 'owner', 'bg-yellow-700 text-yellow-200': user.role === 'analyst', 'bg-blue-700 text-blue-200': user.role === 'viewer'}"
+                >
+                    {{ user.role.charAt(0).toUpperCase() + user.role.slice(1) }}
+                </span>
+            </span>
+            <button v-if="user.userId !== 'current_user_id'" @click="removeUser(user.userId)" 
+                    class="remove-btn bg-red-600 hover:bg-red-700 text-white w-6 h-6 flex items-center justify-center rounded-full transition duration-150"
+                    title="Remove User"
+            >
+                &times;
+            </button>
+            <span v-else class="owner-tag font-semibold text-green-400">Project Creator</span>
         </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.user-entry { display: flex; gap: 10px; margin-bottom: 20px; }
-.user-entry input { flex-grow: 2; padding: 8px; }
-.user-entry select { flex-grow: 1; padding: 8px; }
-.user-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dotted #eee; align-items: center; }
-.owner-tag { font-weight: bold; color: green; }
+/* Scoped styles have been updated to complement Tailwind classes */
+
+.user-list::-webkit-scrollbar {
+  width: 8px;
+}
+.user-list::-webkit-scrollbar-thumb {
+  background-color: #4b5563; /* Gray-600 */
+  border-radius: 4px;
+}
+.user-list::-webkit-scrollbar-track {
+  background-color: #374151; /* Gray-700 */
+}
 </style>

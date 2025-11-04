@@ -1,56 +1,47 @@
-// frontend/src/classes/ProjectFormData.ts
+// ProjectFormData.js
 
-import { AreaOfInterestDraft } from './AreaOfInterestDraft';
 
-interface UserRoleAssignment {
-    userId: string;
-    role: 'owner' | 'analyst' | 'viewer' | string;
-    username: string;
-}
+import { AreaOfInterestDraft } from './AreaOfInterestDraft.js';
 
-export interface AuxDataDraft {
-    key: string;
-    value: string;
-}
 /**
  * ProjectFormData: Manages the volatile state of the 4-step project configuration process.
  */
 export class ProjectFormData {
-    public projectName: string = '';
-    public description: string = '';
-    public auxDataDrafts: AuxDataDraft[] = [];
+    projectName = '';
+    description = '';
+    auxDataDrafts = [];
 
-    public aoiDrafts: AreaOfInterestDraft[] = [];
-    public users: UserRoleAssignment[] = [];
+    aoiDrafts = [];
+    users = [];
 
-    public isUpdateMode: boolean = false;
-    public currentStep: number = 1;
-    public projectIdToUpdate: number | null = null;
+    isUpdateMode = false;
+    currentStep = 1;
+    projectIdToUpdate = null;
 
-    constructor(isUpdate: boolean = false, projectId: number | null = null) {
+    constructor(isUpdate = false, projectId = null) {
         this.isUpdateMode = isUpdate;
         this.projectIdToUpdate = projectId;
         // Initialize with creator as owner (will be updated/overridden later)
         this.users = [{ userId: 'current_user_id', role: 'owner', username: 'Creator' }];
     }
 
-    public nextStep(): void {
+    nextStep() {
         if (this.currentStep < 4) {
             this.currentStep++;
         }
     }
-    public prevStep(): void {
+    prevStep() {
         if (this.currentStep > 1) {
             this.currentStep--;
         }
     }
 
-    public addAOIDraft(aoi: AreaOfInterestDraft): void {
+    addAOIDraft(aoi) {
         this.aoiDrafts.push(aoi);
     }
 
-    private getFinalAuxData(): Record<string, any> {
-        const finalAuxData: Record<string, any> = {};
+    getFinalAuxData() {
+        const finalAuxData = {};
         this.auxDataDrafts.forEach(item => {
             if (item.key && item.value) {
                 // Try to parse non-string values (numbers, booleans, objects)
@@ -64,7 +55,7 @@ export class ProjectFormData {
         return finalAuxData;
     }
 
-    public toBackendBundle(): any {
+    toBackendBundle() {
         // CRITICAL FIX: Ensure projectName and description are included here
         const finalAuxData = this.getFinalAuxData();
         return {
@@ -78,7 +69,7 @@ export class ProjectFormData {
         };
     }
 
-    public reset(): void {
+    reset() {
         this.projectName = '';
         this.description = '';
         this.auxDataDrafts = [];

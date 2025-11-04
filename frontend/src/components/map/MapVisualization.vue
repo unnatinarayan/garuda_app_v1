@@ -1,4 +1,3 @@
-<!-- MapVisualization.vue -->
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-xl shadow-inner">
         <div class="map-header bg-gray-700 p-4 rounded-t-xl flex justify-between items-center">
@@ -26,7 +25,7 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref, nextTick, watch } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -34,28 +33,27 @@ import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet.gridlayer.googlemutant'; // Keep this for satellite view
 
-// Import the required GeoJSON type for clarity
-import type { GeoJsonPolygon } from '@/classes/AreaOfInterestDraft';
+// REMOVED: import type { GeoJsonPolygon } from '@/classes/AreaOfInterestDraft';
 
-const props = defineProps<{
+const props = defineProps({
     // AOIs to load when viewing an existing project (Create/Update or Monitor)
-    aoisToDisplay?: any[]; 
-    isMonitorMode?: boolean; 
-}>();
+    aoisToDisplay: Array, 
+    isMonitorMode: Boolean, 
+});
 
 const emit = defineEmits(['aoi-drawn']);
 
 // Reactive State
-const map = ref<L.Map | null>(null);
-const drawnItems = ref<L.FeatureGroup | null>(null);
-const bufferDistance = ref<number | null>(null);
+const map = ref(null);
+const drawnItems = ref(null);
+const bufferDistance = ref(null);
 const requiresBufferInput = ref(false);
-const selectedAoiDetails = ref<any>(null); // State for responsive detail display
+const selectedAoiDetails = ref(null); // State for responsive detail display
 
 // Utility function to patch Leaflet Draw
-const safePatch = (handler: any) => {
+const safePatch = (handler) => {
     if (handler && handler.prototype && !handler.prototype._fireCreatedEvent) {
-        handler.prototype._fireCreatedEvent = function (layer: L.Layer) {
+        handler.prototype._fireCreatedEvent = function (layer) {
             this._map.fire(L.Draw.Event.CREATED, { layer: layer, layerType: this.type });
         };
     }
@@ -77,7 +75,7 @@ const initializeMap = () => {
         attribution: '© OpenStreetMap',
         maxZoom: 19 
     });
-    const satelliteLayer = (L as any).gridLayer.googleMutant({ 
+    const satelliteLayer = (L).gridLayer.googleMutant({ 
         type: 'hybrid', 
         attribution: 'Map data © Google',
         maxZoom: 20
@@ -86,11 +84,11 @@ const initializeMap = () => {
     const baseLayers = { 'OpenStreetMap': osmLayer, 'Satellite': satelliteLayer };
     
     // 1. Set OpenStreetMap as FIRST PRIORITY and default layer
-    osmLayer.addTo(map.value!);
-    L.control.layers(baseLayers).addTo(map.value!);
+    osmLayer.addTo(map.value);
+    L.control.layers(baseLayers).addTo(map.value);
 
-    drawnItems.value = new (L.FeatureGroup as any)();
-    map.value!.addLayer(drawnItems.value);
+    drawnItems.value = new (L.FeatureGroup)();
+    map.value.addLayer(drawnItems.value);
     
     if (!props.isMonitorMode) {
         setupDrawingControls();
@@ -101,7 +99,7 @@ const initializeMap = () => {
         loadExistingAOIs(props.aoisToDisplay);
     } else {
         // Fit the world view if no AOIs are loaded
-        map.value!.setView([21.5937, 80.9629], 5);
+        map.value.setView([21.5937, 80.9629], 5);
     }
 };
 
@@ -109,9 +107,9 @@ const setupDrawingControls = () => {
     safePatch(L.Draw.Polygon);
     safePatch(L.Draw.Polyline);
     safePatch(L.Draw.Marker);
-    safePatch(L.Draw.Circle); // Keep circle just in case
+    safePatch(L.Draw.Circle);
 
-    const drawControl = new (L.Control as any).Draw({
+    const drawControl = new (L.Control).Draw({
         edit: {
             featureGroup: drawnItems.value,
             // Disable editing/deleting of previous AOIs in the context of creating a new one
@@ -126,25 +124,25 @@ const setupDrawingControls = () => {
             rectangle: false,
         }
     });
-    map.value!.addControl(drawControl);
+    map.value.addControl(drawControl);
     
     // Handle Drawing Events
-    map.value!.on((L.Draw as any).Event.DRAWSTART, (e: any) => {
+    map.value.on((L.Draw).Event.DRAWSTART, (e) => {
         // Clear all previously drawn items to ensure only one is being defined at a time
-        drawnItems.value!.clearLayers(); 
+        drawnItems.value.clearLayers(); 
         requiresBufferInput.value = (e.layerType === 'marker' || e.layerType === 'polyline');
         bufferDistance.value = null;
     });
 
-    map.value!.on((L.Draw as any).Event.CREATED, (e: any) => {
+    map.value.on((L.Draw).Event.CREATED, (e) => {
         let layer = e.layer;
         const layerType = e.layerType;
 
-        drawnItems.value!.addLayer(layer);
+        drawnItems.value.addLayer(layer);
         
         // Convert to GeoJSON
         const geoJsonFeature = layer.toGeoJSON();
-        let geometryType: 'Point' | 'LineString' | 'Polygon';
+        let geometryType;
         
         // Normalize geometry type for backend consistency
         switch(layerType) {
@@ -165,7 +163,7 @@ const setupDrawingControls = () => {
         
         const aoiData = {
             // CRITICAL FIX: Ensure GeoJSON object is cast correctly
-            geometry: geoJsonFeature.geometry as GeoJsonPolygon, 
+            geometry: geoJsonFeature.geometry, 
             geometryType: geometryType,
             buffer: buffer
         };
@@ -175,7 +173,7 @@ const setupDrawingControls = () => {
 };
 
 // **NEW FUNCTIONALITY: Displaying Existing AOIs**
-const loadExistingAOIs = (aois: any[]) => {
+const loadExistingAOIs = (aois) => {
     const aoiLayers = aois.map(aoi => {
         // CRITICAL: The backend returns geometry as a GeoJSON object inside geomGeoJson property
         const layer = L.geoJSON(aoi.geomGeoJson, {
@@ -201,7 +199,7 @@ const loadExistingAOIs = (aois: any[]) => {
                     layer.on('click', (e) => {
                         selectedAoiDetails.value = aoi;
                         // Center map on the clicked feature
-                        map.value!.setView(e.latlng, map.value!.getZoom());
+                        map.value.setView(e.latlng, map.value.getZoom());
                     });
                 }
             }
@@ -210,12 +208,12 @@ const loadExistingAOIs = (aois: any[]) => {
     });
     
     // Add all AOI layers to the map
-    const combinedAoiLayer = L.featureGroup(aoiLayers).addTo(drawnItems.value!);
+    const combinedAoiLayer = L.featureGroup(aoiLayers).addTo(drawnItems.value);
     
     // Zoom/pan the map to fit all loaded AOIs
     try {
         if (combinedAoiLayer.getLayers().length > 0) {
-            map.value!.fitBounds(combinedAoiLayer.getBounds(), { padding: [50, 50] });
+            map.value.fitBounds(combinedAoiLayer.getBounds(), { padding: [50, 50] });
         }
     } catch (e) {
         console.warn("Could not fit bounds of AOIs:", e);
@@ -231,7 +229,7 @@ onMounted(() => {
 watch(() => props.aoisToDisplay, (newAois) => {
     if (map.value && newAois && newAois.length > 0) {
         // Clear old layers before loading new ones
-        drawnItems.value!.clearLayers(); 
+        drawnItems.value.clearLayers(); 
         loadExistingAOIs(newAois);
     }
 }, { deep: true });

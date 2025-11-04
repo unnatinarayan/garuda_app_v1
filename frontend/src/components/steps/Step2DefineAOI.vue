@@ -1,12 +1,12 @@
-<script setup lang="ts">
-import { ProjectFormData } from '@/classes/ProjectFormData';
-import { AreaOfInterestDraft, GeoJsonPolygon } from '@/classes/AreaOfInterestDraft';
+<script setup>
+import { ProjectFormData } from '@/classes/ProjectFormData.js';
+import { AreaOfInterestDraft } from '@/classes/AreaOfInterestDraft.js';
 import MapVisualization from '@/components/map/MapVisualization.vue';
 import { ref } from 'vue';
 
-const props = defineProps<{
-  projectData: ProjectFormData;
-}>();
+const props = defineProps({
+  projectData: ProjectFormData,
+});
 
 const currentAoiName = ref('');
 // Initialize counter based on existing drafts (important for update mode)
@@ -16,7 +16,7 @@ let aoiCounter = props.projectData.aoiDrafts.length > 0
 
 
 // The main method called by the MapVisualization component when a geometry is drawn
-const handleAOISubmission = (data: { geometry: GeoJsonPolygon, geometryType: string, buffer: number }) => {
+const handleAOISubmission = (data) => {
     if (!currentAoiName.value) {
         alert('Please enter a name for your AOI first.');
         return;
@@ -27,7 +27,7 @@ const handleAOISubmission = (data: { geometry: GeoJsonPolygon, geometryType: str
         currentAoiName.value,
         data.geometry,
         aoiCounter,
-        data.geometryType as any,
+        data.geometryType,
         data.buffer
     );
     
@@ -42,7 +42,7 @@ const handleAOISubmission = (data: { geometry: GeoJsonPolygon, geometryType: str
     alert(`AOI draft "${newAOI.name}" saved.`);
 };
 
-const removeAOI = (clientAoiId: number) => {
+const removeAOI = (clientAoiId) => {
     props.projectData.aoiDrafts = props.projectData.aoiDrafts.filter(
         aoi => aoi.clientAoiId !== clientAoiId
     );

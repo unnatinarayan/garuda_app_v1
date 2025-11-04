@@ -1,7 +1,6 @@
-// // router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
 // Standardizing imports to use the @ alias where possible
-import { UserSession } from '@/classes/UserSession';
+import { UserSession } from '@/classes/UserSession.js'; // Updated extension
 
 import HomeViewUI from '@/views/HomeViewUI.vue';
 import ConfigureProjectUI from '@/views/ConfigureProjectUI.vue';
@@ -32,11 +31,11 @@ const router = createRouter({
         },
         // MANAGE/UPDATE Project route (reuses ConfigureProjectUI)
         {
-            path: '/project/update/:id', 
+            path: '/project/update/:id',
             name: 'update-project',
             component: ConfigureProjectUI,
             meta: { requiresAuth: true },
-            props: true 
+            props: true
         },
         // LIST/MANAGE Projects route
         {
@@ -47,7 +46,7 @@ const router = createRouter({
         },
         // MONITOR Map view route
         {
-            path: '/project/monitor/:id', 
+            path: '/project/monitor/:id',
             name: 'monitor-map',
             component: MonitorMapView,
             meta: { requiresAuth: true },
@@ -73,6 +72,3 @@ router.beforeEach((to, from, next) => {
 });
 
 export default router;
-
-
-

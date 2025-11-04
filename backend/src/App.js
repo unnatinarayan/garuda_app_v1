@@ -1,23 +1,20 @@
-// App.ts
-
 import express from 'express';
-import type { Application, Router } from 'express';
 import * as dotenv from 'dotenv';
 import cors from 'cors';
 
-import { AuthController } from './controllers/AuthController.ts';
-import { ProjectController } from './controllers/ProjectController.ts'; // Assuming ProjectController is updated to export a class
+import { AuthController } from './controllers/AuthController.js';
+import { ProjectController } from './controllers/ProjectController.js';
 
-import { AlertsController } from './controllers/AlertsController.ts';
-import { initAlertsSSE } from './services/AlertsSSEService.ts'; // <<< NEW IMPORT
+import { AlertsController } from './controllers/AlertsController.js';
+import { initAlertsSSE } from './services/AlertsSSEService.js'; // <<< Updated import
 
 /**
  * App Class: The primary object-oriented wrapper for the Express server.
  * Initializes all controllers and middleware.
  */
 export class App {
-    private app: Application;
-    private port: number;
+    app;
+    port;
 
     constructor() {
         dotenv.config();
@@ -28,7 +25,7 @@ export class App {
         this.initializeControllers();
     }
 
-    private initializeMiddleware() {
+    initializeMiddleware() {
         this.app.use(cors());
         this.app.use(express.json());
         // Basic check to ensure user ID is present for authorized routes (mock check)
@@ -41,7 +38,7 @@ export class App {
         });
     }
 
-    private initializeControllers() {
+    initializeControllers() {
         this.app.get('/api/status', (req, res) => {
             res.json({ message: 'Garuda V1 API is online.' });
         });
@@ -51,10 +48,10 @@ export class App {
         this.app.use('/api/projects', new ProjectController().router);
         this.app.use('/api/alerts', new AlertsController().router);
 
-        initAlertsSSE(this.app); // <<< NEW INIT CALL
+        initAlertsSSE(this.app);
     }
 
-    public start() {
+    start() {
         this.app.listen(this.port, () => {
             console.log(`⚡️ Garuda V1 Server running on http://localhost:${this.port}`);
         });

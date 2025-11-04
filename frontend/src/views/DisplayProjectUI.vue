@@ -1,9 +1,7 @@
-<!-- DisplayProjectUI.vue -->
-
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useProjectStore } from '@/stores/ProjectStore';
+import { useProjectStore } from '@/stores/ProjectStore.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -75,7 +73,7 @@ const filteredProjects = computed(() => {
 });
 
 
-const handleProjectAction = (project: any) => {
+const handleProjectAction = (project) => {
     if (isMonitorMode.value) {
         // Action: Monitor Project (opens map UI with live AOIs)
         router.push({ name: 'monitor-map', params: { id: project.id } }); 
@@ -85,7 +83,7 @@ const handleProjectAction = (project: any) => {
     }
 };
 
-const handleDelete = async (projectId: number, projectName: string) => {
+const handleDelete = async (projectId, projectName) => {
     // Note: Replaced `confirm` with a simple alert/check as per core rules.
     const confirmed = prompt(`Type DELETE to confirm deletion of project: "${projectName}"`);
     if (confirmed === 'DELETE') {
@@ -222,5 +220,3 @@ const goBack = () => {
   background-color: #1f2937;
 }
 </style>
-
-

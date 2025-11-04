@@ -1,9 +1,7 @@
-// frontend/src/components/steps/Step1BasicInfo.vue
-
-<script setup lang="ts">
-import { type AuxDataDraft } from '@/classes/ProjectFormData';
+<script setup>
+// REMOVED: import { type AuxDataDraft } from '@/classes/ProjectFormData';
 import { ref } from 'vue';
-import { useProjectStore } from '@/stores/ProjectStore'; // Import the store
+import { useProjectStore } from '@/stores/ProjectStore.js'; // Import the store
 
 // We no longer need the prop, we use the store directly
 const projectStore = useProjectStore(); 
@@ -19,13 +17,13 @@ const addAuxData = () => {
         projectData.auxDataDrafts.push({
             key: newAuxKey.value,
             value: newAuxValue.value
-        } as AuxDataDraft);
+        }); // REMOVED: as AuxDataDraft
         newAuxKey.value = '';
         newAuxValue.value = '';
     }
 };
 
-const removeAuxData = (key: string) => {
+const removeAuxData = (key) => {
     projectData.auxDataDrafts = projectData.auxDataDrafts.filter(draft => draft.key !== key);
 };
 </script>
@@ -53,7 +51,7 @@ const removeAuxData = (key: string) => {
     <div class="aux-list space-y-2">
         <div v-for="draft in projectData.auxDataDrafts" :key="draft.key" class="aux-item flex justify-between p-2 bg-gray-700 rounded border border-gray-600">
             <span class="text-gray-300">{{ draft.key }}: <span class="text-white font-mono">{{ draft.value }}</span></span>
-            <button @click="removeAuxData(draft.key as string)" class="text-red-400 hover:text-red-500 font-bold">x</button>
+            <button @click="removeAuxData(draft.key)" class="text-red-400 hover:text-red-500 font-bold">x</button>
         </div>
     </div>
   </div>

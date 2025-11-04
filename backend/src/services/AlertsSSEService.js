@@ -1,9 +1,7 @@
-// backend/src/services/AlertsSSEService.ts
-
-import type { Express, Request, Response } from 'express';
+// REMOVED: import type { Express, Request, Response } from 'express';
 import { Kafka } from 'kafkajs';
 import { createClient } from '@redis/client';
-import { DBClient } from '../db/DBClient.ts'; // Used to look up which users are assigned to a project
+import { DBClient } from '../db/DBClient.js'; // Used to look up which users are assigned to a project
 
 // --- CONFIGURATION ---
 // The Kafka topic name where PostgreSQL (via Debezium/CDC) publishes new 'alerts' records.
@@ -18,8 +16,7 @@ const KAFKA_BROKERS = ['localhost:9092'];
 
 // Map to hold **active HTTP connections** (Server-Sent Events) for each logged-in user.
 // Key: userId, Value: Array of Express Response objects (one for each open browser tab).
-type SSEClientMap = { [userId: string]: Response[] };
-let sseClients: SSEClientMap = {};
+let sseClients = {};
 
 // Initialize the Redis client.
 const redisClient = createClient({ url: REDIS_URL });
@@ -39,10 +36,12 @@ const consumer = kafka.consumer({ groupId: KAFKA_GROUP_ID });
 const db = DBClient.getInstance(); // Get the single database connection pool instance
 
 /**
- * Sends a notification object instantly to any client (browser tab) currently connected 
+ * Sends a notification object instantly to any client (browser tab) currently connected
  * via the SSE stream for a specific user.
+ * @param {string} userId
+ * @param {Record<string, any>} notification
  */
-function sendToSSEClient(userId: string, notification: Record<string, any>): void {
+function sendToSSEClient(userId, notification) {
     const clients = sseClients[userId];
     // Format the message according to the Server-Sent Events specification: 'data: {payload}\n\n'
     const notifString = `data: ${JSON.stringify(notification)}\n\n`;
@@ -60,10 +59,8 @@ function sendToSSEClient(userId: string, notification: Record<string, any>): voi
 
 /**
  * Kafka consumer logic. This is the heart of the real-time system.
- * It constantly pulls new alert messages from the Kafka topic, identifies recipients,
- * caches the alert in Redis, and pushes it via SSE.
  */
-async function runKafkaConsumer(): Promise<void> {
+async function runKafkaConsumer() {
     try {
         await redisClient.connect(); // Connect to Redis database
 
@@ -80,7 +77,7 @@ async function runKafkaConsumer(): Promise<void> {
                 try {
                     const data = JSON.parse(messageValue);
                     // Debezium wraps the new row data in 'payload.after' for an INSERT operation (op='c')
-                    const payload = data?.payload?.after; 
+                    const payload = data?.payload?.after;
                     if (!payload || data.payload.op !== 'c') {
                         console.log(`CDC: Skipping message (op: ${data?.payload?.op})`);
                         return; // Only process new inserts/creations
@@ -94,7 +91,7 @@ async function runKafkaConsumer(): Promise<void> {
                     );
 
                     // Extract all user IDs who are linked to this project
-                    const recipientUserIds: string[] = usersResult.rows.map(row => row.user_id);
+                    const recipientUserIds = usersResult.rows.map(row => row.user_id);
 
                     if (recipientUserIds.length === 0) {
                         console.log(`CDC: No users found for project ${projectId}. Skipping alert.`);
@@ -116,10 +113,8 @@ async function runKafkaConsumer(): Promise<void> {
                         const notifString = JSON.stringify(notification);
                         
                         // 1. **REDIS Caching (Persistence for Offline Users)**
-                        // lPush adds the new alert to the *head* (left side) of the list.
                         await redisClient.lPush(`alerts:${userId}`, notifString);
-                        // lTrim keeps the list size manageable (e.g., last 50 alerts)
-                        await redisClient.lTrim(`alerts:${userId}`, 0, 49); 
+                        await redisClient.lTrim(`alerts:${userId}`, 0, 49);
 
                         // 2. **SSE Delivery (Real-time Push)**
                         sendToSSEClient(userId, notification);
@@ -137,12 +132,13 @@ async function runKafkaConsumer(): Promise<void> {
 }
 
 /**
- * Initializes the entire real-time alert system by setting up 
+ * Initializes the entire real-time alert system by setting up
  * the SSE HTTP endpoint and starting the Kafka consumer worker.
+ * @param {import('express').Application} app
  */
-export function initAlertsSSE(app: Express): void {
+export function initAlertsSSE(app) {
     // 1. SSE Endpoint for Client Connection (The browser connects here to listen)
-    app.get('/api/alerts/events/:userId', async (req: Request, res: Response) => {
+    app.get('/api/alerts/events/:userId', async (req, res) => {
         const { userId } = req.params;
 
         // Set mandatory headers for Server-Sent Events stream
@@ -160,7 +156,7 @@ export function initAlertsSSE(app: Express): void {
             // lRange retrieves the stored list of alerts (newest first)
             const notifs = await redisClient.lRange(`alerts:${userId}`, 0, -1);
             // Send each cached alert immediately to the newly connected client
-            notifs.forEach(msg => res.write(`data: ${msg}\n\n`)); 
+            notifs.forEach(msg => res.write(`data: ${msg}\n\n`));
         } catch (err) {
             console.error('Redis historical fetch error:', err);
         }
@@ -172,7 +168,7 @@ export function initAlertsSSE(app: Express): void {
     });
 
     // 2. Mark as Read API (Allows the client to clear an alert from their Redis history)
-    app.post('/api/alerts/mark-read', async (req: Request, res: Response) => {
+    app.post('/api/alerts/mark-read', async (req, res) => {
         const { userId, notificationId } = req.body;
         
         try {
@@ -193,7 +189,7 @@ export function initAlertsSSE(app: Express): void {
                 // Completely replace the old Redis list with the filtered, new list
                 await redisClient.del(`alerts:${userId}`);
                 if (filtered.length > 0) {
-                    await redisClient.rPush(`alerts:${userId}`, filtered); 
+                    await redisClient.rPush(`alerts:${userId}`, filtered);
                 }
             }
 

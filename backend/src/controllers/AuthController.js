@@ -1,28 +1,26 @@
-// AuthController.ts
-
 import { Router } from 'express';
-import type { Request, Response } from 'express';
-import { UserModel } from '../models/UserModel.ts'; // <-- NEW IMPORT
+import { UserModel } from '../models/UserModel.js'; // <-- Updated import
+
 /**
  * AuthController: Handles user login and signup using the database.
  */
 export class AuthController {
-    public router: Router;
+    router;
 
     constructor() {
         this.router = Router();
         this.initializeRoutes();
     }
 
-    private initializeRoutes() {
-        this.router.post('/login', this.login); 
+    initializeRoutes() {
+        this.router.post('/login', this.login);
         this.router.post('/signup', this.signup); // <-- NEW SIGNUP ROUTE
     }
 
     /**
      * POST /api/auth/login - Checks credentials against the users table.
      */
-    public login = async (req: Request, res: Response): Promise<Response> => {
+    login = async (req, res) => {
         const { username, password } = req.body;
         const userId = username; // Assume userId is the same as the username/email for login
 
@@ -38,8 +36,8 @@ export class AuthController {
                 return res.status(401).json({ success: false, message: 'Invalid credentials.' });
             }
 
-            return res.status(200).json({ 
-                success: true, 
+            return res.status(200).json({
+                success: true,
                 userId: user.userId,
                 username: user.username,
                 message: 'Login successful'
@@ -53,7 +51,7 @@ export class AuthController {
     /**
      * POST /api/auth/signup - Creates a new user in the users table.
      */
-    public signup = async (req: Request, res: Response): Promise<Response> => {
+    signup = async (req, res) => {
         const { username, password } = req.body;
         const userId = username; // Use username as the unique user_id for simplicity
 
@@ -77,8 +75,8 @@ export class AuthController {
             });
             await newUser.save();
 
-            return res.status(201).json({ 
-                success: true, 
+            return res.status(201).json({
+                success: true,
                 userId: newUser.userId,
                 username: newUser.username,
                 message: 'Signup successful. Please log in.'

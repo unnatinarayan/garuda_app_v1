@@ -1,15 +1,20 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Garuda V1 Backend - Pure JavaScript/Express/PostgreSQL",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "ts-node src/server.ts",
-    "dev": "ts-node src/server.ts",
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "javascript",
+    "node",
+    "postgres"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -25,14 +30,8 @@
     "pg": "^8.16.3"
   },
   "devDependencies": {
-    "@swc/core": "^1.13.5",
-    "@swc/helpers": "^0.5.17",
     "@types/express": "^5.0.3",
     "@types/node": "^24.8.1",
-    "@types/pg": "^8.15.5",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "@types/pg": "^8.15.5"
   }
 }

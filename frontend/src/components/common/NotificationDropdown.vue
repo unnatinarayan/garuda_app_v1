@@ -1,9 +1,7 @@
-<!-- NotificationDropdown.vue -->
-
-<script setup lang="ts">
+<script setup>
 import { ref, computed } from 'vue';
-import { useProjectStore } from '@/stores/ProjectStore';
-import { useRouter } from 'vue-router'; // To potentially navigate on click
+import { useProjectStore } from '@/stores/ProjectStore.js';
+import { useRouter } from 'vue-router';
 
 const projectStore = useProjectStore();
 const router = useRouter();
@@ -22,9 +20,9 @@ const toggleDropdown = () => {
 
 /**
  * Handles marking an alert as read and removing it from Redis and the local store.
- * @param alert The alert object to mark as read.
+ * @param {Object} alert The alert object to mark as read.
  */
-const markAsRead = async (alert: any) => {
+const markAsRead = async (alert) => {
     try {
         // Optimistic update: remove locally right away for speed
         projectStore.activeAlerts = projectStore.activeAlerts.filter(a => a.id !== alert.id);
@@ -40,8 +38,9 @@ const markAsRead = async (alert: any) => {
 
 /**
  * Handles the full click action on an alert (mark read and potentially navigate).
+ * @param {Object} alert
  */
-const handleAlertClick = (alert: any) => {
+const handleAlertClick = (alert) => {
     // 1. Mark as read immediately
     markAsRead(alert);
 

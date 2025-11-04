@@ -1,9 +1,9 @@
 <!-- HomeViewUI.vue -->
 
-<script setup lang="ts">
+<script setup>
 import { useRouter } from 'vue-router';
-import { useProjectStore } from '@/stores/ProjectStore';
-import { UserSession } from '@/classes/UserSession';
+import { useProjectStore } from '@/stores/ProjectStore.js';
+import { UserSession } from '@/classes/UserSession.js';
 import { ref, onMounted, computed } from 'vue';
 
 
@@ -14,6 +14,7 @@ const session = UserSession.getInstance();
 
 const totalProjects = ref(0);
 const activeAlerts = computed(() => projectStore.totalAlerts); // Reactive alert count
+
 
 onMounted(async () => {
     // Fetch projects to update the count in the dashboard sneak peek
@@ -87,6 +88,7 @@ const handleLogout = () => {
     </div>
   </div>
 </template>
+
 
 
 <style scoped>
