@@ -107,15 +107,15 @@ const goBack = () => {
 </script>
 
 <template>
-  <div id="manage-view" class="min-h-screen bg-gray-900 text-white flex justify-center pt-10">
-    <div class="w-full max-w-4xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-6 relative">
+  <div id="manage-view" class="min-h-screen bg-gray-900 text-white flex justify-center ">
+    <div class="w-full max-w-4xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-2 relative">
         
         <!-- Header for Manage View -->
-        <header class="pb-6 mb-6 flex items-center">
+        <header class="pb-2 mb-2 flex items-center">
             <button @click="goBack" class="mr-4 text-cyan-400 hover:text-cyan-300 transition duration-150" title="Back to Home">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </button>
-            <h1 class="text-3xl font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}</h1>
+            <h1 class="text-xl  font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}</h1>
             <span v-if="isMonitorMode" class="ml-4 px-3 py-1 bg-purple-600 rounded-full text-sm font-semibold">Live Mode</span>
         </header>
 
@@ -131,32 +131,19 @@ const goBack = () => {
                     class="w-full p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150" 
                 >
                 <!-- Add Project Button -->
-                <button 
-                    @click="router.push({ name: 'add-project' })" 
+                 <button 
                     class="ml-3 p-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0" 
                     title="Add New Project"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"></path>
+</svg>
                 </button>
+                
             </div>
             
             <!-- Filter Selects -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
-                <select v-model="filterStatus" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Status</option>
-                    <option v-for="s in availableStatuses" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <select v-model="filterRole" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Role</option>
-                    <option v-for="r in availableRoles" :key="r" :value="r">{{ r.charAt(0).toUpperCase() + r.slice(1) }}</option>
-                </select>
-                <!-- Filter Type (MOCK) -->
-                <select class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Type</option>
-                </select>
-                <!-- Filter Date -->
-                <input type="date" v-model="filterDate" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-            </div>
+            
             
             <!-- Project List -->
             <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">

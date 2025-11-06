@@ -191,7 +191,7 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
                     >
                         {{ isUpdateMode ? 'FINAL UPDATE' : 'FINAL SUBMIT' }}
                     </button>
-                    <p v-if="projectForm.projectName === ''" class="text-red-400 mt-2 text-sm">Please complete Step 1 before final submission.</p>
+                    <!-- <p v-if="projectForm.projectName === ''" class="text-red-400 mt-2 text-sm">Please complete all Step 1 before final submission.</p> -->
                 </div>
             </div>
 
@@ -222,8 +222,8 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
                             v-if="step < 4" 
                             class="absolute top-4 h-0.5 z-0 transition-all duration-500"
                             :style="{ 
-                                left: (step * 25 - 12.5) + '%', 
-                                width: '25%', 
+                                left: (step * 31 - 12.5) + '%', 
+                                width: '30%', 
                                 transform: 'translateX(-50%)',
                             }"
                             :class="{'bg-green-600': isStepVisited(step), 'bg-gray-700': !isStepVisited(step)}"

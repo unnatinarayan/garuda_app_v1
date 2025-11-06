@@ -122,7 +122,7 @@ const setupDrawingControls = () => {
     // Handle Drawing Events
     map.value.on((L.Draw).Event.DRAWSTART, (e) => {
         // Clear all previously drawn items to ensure only one is being defined at a time
-        drawnItems.value.clearLayers(); 
+        // drawnItems.value.clearLayers(); 
         // requiresBufferInput.value = (e.layerType === 'marker' || e.layerType === 'polyline');
         // bufferDistance.value = null;
     });
@@ -131,7 +131,7 @@ const setupDrawingControls = () => {
         let layer = e.layer;
         const layerType = e.layerType;
 
-        drawnItems.value.addLayer(layer);
+        // drawnItems.value.addLayer(layer);
         
         // Convert to GeoJSON
         const geoJsonFeature = layer.toGeoJSON();

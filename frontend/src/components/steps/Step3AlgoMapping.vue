@@ -1,5 +1,11 @@
 <!-- Step3AlgoMapping.vue  -->
 
+
+
+
+
+
+
 <script setup>
 import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { onMounted, ref, watch, computed } from 'vue';
@@ -8,7 +14,7 @@ import CustomSelect from '@/components/common/CustomSelect.vue';
 import KeyValueEditor from '@/components/common/KeyValueEditor.vue'; 
 
 const props = defineProps({
-	projectData: ProjectFormData,
+    projectData: ProjectFormData,
 });
 
 const api = ApiClient.getInstance();
@@ -20,13 +26,8 @@ const loadingAlgos = ref(false);
 const error = ref(null);
 
 // --- NEW STATE FOR MAPPING LOGIC ---
-// Holds the algo_id strings of algorithms currently selected for the active AOI
 const selectedAlgoIds = ref([]);
-
-// Holds the arguments for the currently selected algorithm (used by KeyValueEditor)
 const currentAlgoArgs = ref({});
-
-// The algorithm that is currently open for argument editing
 const editingAlgo = ref(null); 
 // -----------------------------------
 
@@ -104,7 +105,6 @@ const openArgEditor = (algoId) => {
 
 /**
  * Saves the edited arguments back to the AOI draft.
- * @param {Object} updatedArgs 
  */
 const saveArgs = (updatedArgs) => {
     if (!selectedAOI.value || !editingAlgo.value) return;
@@ -121,7 +121,7 @@ const saveArgs = (updatedArgs) => {
     alert(`Arguments for ${algoId} updated.`);
 };
 
-// --- Lifecycle & Data Fetching ---
+// --- Lifecycle & Data Fetching (Remains the same) ---
 onMounted(async () => {
     loadingAlgos.value = true;
     try {
@@ -132,7 +132,7 @@ onMounted(async () => {
             algo_id: a.algo_id, 
             category: a.category,
             args: a.args,
-            description: a.description // Use the description
+            description: a.description
         }));
         
         if (props.projectData.aoiDrafts.length > 0) {
@@ -181,31 +181,37 @@ onMounted(async () => {
                         class="flex flex-col p-3 rounded-lg border transition duration-150"
                         :class="{'bg-green-800/20 border-green-500': selectedAlgoIds.includes(algo.algo_id), 'bg-gray-700 border-gray-600 hover:bg-gray-600': !selectedAlgoIds.includes(algo.algo_id)}"
                     >
-                        <div class="flex items-center justify-between mb-2">
-                            <label :for="algo.algo_id" class="font-bold cursor-pointer text-white flex-grow mr-2">
-                                {{ algo.name }}
-                            </label>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs px-2 py-0.5 rounded bg-blue-700 text-blue-200 flex-shrink-0">{{ algo.category }}</span>
-                                <input 
-                                    type="checkbox" 
-                                    :id="algo.algo_id"
-                                    :checked="selectedAlgoIds.includes(algo.algo_id)"
-                                    @change="handleAlgoSelectionChange(algo.algo_id, $event.target.checked)"
-                                    class="h-5 w-5 rounded text-green-600 bg-gray-600 border-gray-500 focus:ring-green-500"
+                        <div class="flex space-x-3 items-start">
+                            
+                            <input 
+                                type="checkbox" 
+                                :id="algo.algo_id"
+                                :checked="selectedAlgoIds.includes(algo.algo_id)"
+                                @change="handleAlgoSelectionChange(algo.algo_id, $event.target.checked)"
+                                class="mt-1 flex-shrink-0 w-5 h-5 rounded text-green-600 bg-gray-600 border-gray-500 focus:ring-green-500"
+                            >
+
+                            <div class="flex-grow min-w-0">
+                                <div class="flex justify-between items-start mb-1">
+                                    <label :for="algo.algo_id" class="font-bold cursor-pointer text-white truncate max-w-[80%]">
+                                        {{ algo.name }}
+                                    </label>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-blue-700 text-blue-200 flex-shrink-0 ml-2">{{ algo.category }}</span>
+                                </div>
+                                
+                                <p class="text-xs text-gray-400 mb-2 whitespace-normal break-words">
+                                    {{ algo.description || 'No description provided.' }}
+                                </p>
+                                
+                                <button 
+                                    v-if="selectedAlgoIds.includes(algo.algo_id)"
+                                    @click="openArgEditor(algo.algo_id)"
+                                    class="mt-1 text-xs px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition duration-150"
                                 >
+                                    Configure Arguments
+                                </button>
                             </div>
                         </div>
-                        
-                        <p class="text-xs text-gray-400 mb-2 truncate">{{ algo.description || 'No description provided.' }}</p>
-                        
-                        <button 
-                            v-if="selectedAlgoIds.includes(algo.algo_id)"
-                            @click="openArgEditor(algo.algo_id)"
-                            class="mt-2 text-sm px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg self-start transition duration-150"
-                        >
-                            Configure Arguments
-                        </button>
                     </div>
                 </div>
             </div>
@@ -227,6 +233,6 @@ onMounted(async () => {
             </div>
         </div>
         
-        </div>
+    </div>
 </template>
 
