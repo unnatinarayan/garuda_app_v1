@@ -1,5 +1,6 @@
+// DBClient.js
+
 import { Pool } from 'pg';
-// REMOVED: import type { QueryResult } from 'pg';
 
 import * as dotenv from 'dotenv';
 

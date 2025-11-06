@@ -1,6 +1,8 @@
+// stores/ProjectStore.js 
+
+
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-// STATIC IMPORTS FOR CLASSES
 import { ProjectFormData } from '../classes/ProjectFormData.js';
 import { AreaOfInterestDraft } from '../classes/AreaOfInterestDraft.js';
 import { ApiClient } from '../api/ApiClient.js';
@@ -54,7 +56,7 @@ function mapBackendToForm(data) {
     // Step 4 Mapping (Users)
     form.users = data.users.map((u) => ({
         userId: u.user_id,
-        role: u.role,
+        role: u.user_role,
         username: u.user_id,
     }));
 

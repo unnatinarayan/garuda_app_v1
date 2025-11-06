@@ -254,6 +254,22 @@ INSERT INTO algorithm_catalogue (algo_id, args, description, category) VALUES
 ```
 
 
+### Detail,Value
+
+URL,http://localhost:3000/api/alerts
+Method,POST
+Headers,Content-Type: application/json
+
+
+{
+    "mapping_id": 1, 
+    "message": {
+        "event_type": "change_detection",
+        "detail": "Unauthorized construction detected near AOI-1 boundary.",
+        "confidence": 0.95
+    }
+}
+
 ### chcek node tsc
 
 node --version

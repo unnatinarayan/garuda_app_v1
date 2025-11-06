@@ -1,3 +1,5 @@
+// AuthController.js
+
 import { Router } from 'express';
 import { UserModel } from '../models/UserModel.js'; // <-- Updated import
 
@@ -52,9 +54,10 @@ export class AuthController {
      * POST /api/auth/signup - Creates a new user in the users table.
      */
     signup = async (req, res) => {
-        const { username, password } = req.body;
+        const { username, password, email, contactno } = req.body; 
         const userId = username; // Use username as the unique user_id for simplicity
 
+        
         // Simple validation
         if (!username || !password || username.length < 3 || password.length < 3) {
             return res.status(400).json({ success: false, message: 'Username and password must be at least 3 characters long.' });
@@ -71,7 +74,9 @@ export class AuthController {
             const newUser = new UserModel({
                 user_id: userId,
                 username: username,
-                password_hash: password // Plain text password for mock hash
+                password_hash: password, // Plain text password for mock hash
+                contactno: contactno || null, // <-- NEW
+                email: email || null         // <-- NEW
             });
             await newUser.save();
 
@@ -84,7 +89,7 @@ export class AuthController {
         } catch (error) {
             console.error('Signup Error:', error);
             if (error.code === '23505') {
-                 return res.status(409).json({ success: false, message: 'User already exists (unique constraint violation).' });
+                return res.status(409).json({ success: false, message: 'User already exists (unique constraint violation).' });
             }
             return res.status(500).json({ success: false, message: 'Server error during signup.' });
         }

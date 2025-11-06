@@ -1,3 +1,6 @@
+// UserSession.js 
+
+
 import { ApiClient } from '../api/ApiClient.js';
 
 /**
@@ -10,7 +13,6 @@ export class UserSession {
     
     static instance;
 
-    // REMOVED: static readonly STORAGE_KEY = 'garuda_user_session';
 
     constructor() {
         this.loadSession();

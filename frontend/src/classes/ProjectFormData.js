@@ -1,6 +1,5 @@
 // ProjectFormData.js
 
-
 import { AreaOfInterestDraft } from './AreaOfInterestDraft.js';
 
 /**

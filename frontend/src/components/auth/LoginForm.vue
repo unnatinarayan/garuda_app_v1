@@ -3,27 +3,41 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { UserSession } from '@/classes/UserSession.js'; // Updated extension
+import { UserSession } from '@/classes/UserSession.js'; 
+import { ApiClient } from '@/api/ApiClient.js'; // Import ApiClient to expose signup with new fields
 
 const router = useRouter();
 const session = UserSession.getInstance();
+const api = ApiClient.getInstance(); // Get API client instance
 
 const username = ref('testuser');
 const password = ref('pass');
+const email = ref('');         // <-- NEW FIELD
+const contactno = ref('');     // <-- NEW FIELD
 const errorMessage = ref('');
-const isSigningUp = ref(false); // New state for toggling between login/signup
+const isSigningUp = ref(false); 
 
 const submitAuth = async () => {
     errorMessage.value = '';
 
     if (isSigningUp.value) {
-        // --- SIGNUP LOGIC ---
-        const success = await session.attemptSignup(username.value, password.value);
-        if (success) {
+        // --- SIGNUP LOGIC (Updated to include email and contactno) ---
+        if (!username.value || !password.value || !email.value || !contactno.value) {
+            errorMessage.value = 'All fields are required for signup.';
+            return;
+        }
+
+        try {
+            await api.signup(username.value, password.value, email.value, contactno.value);
             errorMessage.value = 'Signup successful! Please log in with your new account.';
             isSigningUp.value = false; // Switch to login view
-        } else {
-            errorMessage.value = 'Signup failed. User may already exist or invalid input.';
+            // Clear signup specific fields
+            email.value = '';
+            contactno.value = '';
+
+        } catch (error) {
+            const message = error.response?.data?.message || 'Signup failed. User may already exist or invalid input.';
+            errorMessage.value = message;
         }
 
     } else {
@@ -43,7 +57,7 @@ const submitAuth = async () => {
   <div class="login-container max-w-sm mx-auto p-8 mt-20 bg-gray-800 rounded-xl shadow-2xl text-white">
     <h2 class="text-3xl font-bold mb-6 text-center text-cyan-400">{{ isSigningUp ? 'Sign Up' : 'Login' }} to Garuda V1</h2>
     <form @submit.prevent="submitAuth">
-      
+        
       <p v-if="errorMessage" class="error-message bg-red-600 p-3 rounded mb-4 text-sm text-center">
         {{ errorMessage }}
       </p>
@@ -58,7 +72,29 @@ const submitAuth = async () => {
             class="w-full p-3 bg-gray-700 text-white rounded border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
         />
       </div>
-      
+        
+      <div v-if="isSigningUp" class="input-group mb-4">
+        <label for="email" class="block text-gray-400 mb-1">Email:</label>
+        <input 
+            id="email" 
+            type="email" 
+            v-model="email" 
+            required 
+            class="w-full p-3 bg-gray-700 text-white rounded border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
+        />
+      </div>
+        
+      <div v-if="isSigningUp" class="input-group mb-4">
+        <label for="contactno" class="block text-gray-400 mb-1">Contact Number:</label>
+        <input 
+            id="contactno" 
+            type="tel" 
+            v-model="contactno" 
+            required 
+            class="w-full p-3 bg-gray-700 text-white rounded border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
+        />
+      </div>
+        
       <div class="input-group mb-6">
         <label for="password" class="block text-gray-400 mb-1">Password:</label>
         <input 
@@ -69,7 +105,7 @@ const submitAuth = async () => {
             class="w-full p-3 bg-gray-700 text-white rounded border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
         />
       </div>
-      
+        
       <button 
         type="submit"
         class="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition duration-200 shadow-md"

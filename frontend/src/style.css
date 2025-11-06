@@ -12,15 +12,15 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* DEFAULT (Light Theme) */
-    --bg-color: #ffffff; /* Gray 100 */
-    --container-bg: #f0f6f8;
-    --text-color: #1f2937; /* Gray 800 */
-    --text-muted: #6b7280; /* Gray 500 */
-    --header-border: #e5e7eb; /* Gray 200 */
-    --card-bg: #d1d3d4; /* Gray 50 */ 
-    --input-bg: #f3f4f6; /* Gray 100 */
-    --accent-color: #0891b2; /* Cyan 600 */
-    --accent-hover: #06b6d4; /* Cyan 500 */
+    --bg-color: #030712;
+    --container-bg: #0f172a; /* Slate 900 */
+    --text-color: #e5e7eb; /* Gray 200 */
+    --text-muted: #9ca3af; /* Gray 400 */
+    --header-border: #1f2937; /* Gray 800 */
+    --card-bg: #1f2937; /* Gray 800 */
+    --input-bg: #111827; /* Gray 900 */
+    --accent-color: #06b6d4; /* Cyan 500 */
+    --accent-hover: #0891b2; /* Cyan 600 */
 }
 
 .dark {

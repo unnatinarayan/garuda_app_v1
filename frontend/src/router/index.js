@@ -1,3 +1,6 @@
+// index.js
+
+
 import { createRouter, createWebHistory } from 'vue-router';
 // Standardizing imports to use the @ alias where possible
 import { UserSession } from '@/classes/UserSession.js'; // Updated extension

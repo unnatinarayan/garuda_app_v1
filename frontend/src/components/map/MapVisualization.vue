@@ -1,20 +1,16 @@
+<!-- MapVisualization.vue  -->
+
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-xl shadow-inner">
-        <div class="map-header bg-gray-700 p-4 rounded-t-xl flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-white">Interactive Map: Draw Your Area of Interest</h3>
-            <span class="text-sm text-gray-400" v-if="!props.isMonitorMode">Draw a Point, Line, or Polygon.</span>
-        </div>
-        <div id="map" class="map-view flex-grow" ref="mapDiv"></div> <div v-if="requiresBufferInput && !props.isMonitorMode" class="buffer-control bg-gray-700 p-3 flex items-center justify-center space-x-3 border-t border-gray-600">
-            <label for="buffer" class="text-gray-300 font-medium">Buffer Distance (meters):</label>
-            <input 
-                type="number" id="buffer" 
-                v-model.number="bufferDistance" 
-                min="0" placeholder="0" 
-                class="p-1 w-24 bg-gray-600 text-white rounded border border-gray-500"
-            >
-        </div>
+        <!-- <div class="map-header bg-gray-700 p-2 sm:p-4 rounded-t-xl flex justify-between items-center">
+            <h3 class="text-base sm:text-lg font-semibold text-white">Interactive Map: Draw Your Area of Interest</h3>             
+            <span class="text-xs sm:text-sm text-gray-400" v-if="!props.isMonitorMode"></span>       
+        </div> -->
+        <div id="map" class="map-view flex-grow" ref="mapDiv"></div> 
+
         
-        <div v-if="selectedAoiDetails && props.isMonitorMode" class="aoi-detail-panel absolute bottom-0 right-0 m-4 p-4 bg-gray-800 text-white rounded-xl w-64 shadow-2xl z-[1000]">
+        
+        <div v-if="selectedAoiDetails && props.isMonitorMode" class="aoi-detail-panel absolute bottom-0 right-0 m-4 p-4 bg-gray-800 text-white rounded-xl w-64 shadow-2xl z-[10000]">
             <h4 class="font-bold text-cyan-400 mb-2">AOI Details</h4>
             <p><strong>Name:</strong> {{ selectedAoiDetails.name }}</p>
             <p><strong>ID:</strong> {{ selectedAoiDetails.aoi_id }}</p>
@@ -41,14 +37,11 @@ const props = defineProps({
     isMonitorMode: Boolean, 
 });
 
-const emit = defineEmits(['aoi-drawn']);
+const emit = defineEmits(['aoi-drawn', 'aoi-clicked']);
 
 // Reactive State
 const map = ref(null);
 const drawnItems = ref(null);
-const bufferDistance = ref(null);
-const requiresBufferInput = ref(false);
-const selectedAoiDetails = ref(null); // State for responsive detail display
 
 // Utility function to patch Leaflet Draw
 const safePatch = (handler) => {
@@ -130,8 +123,8 @@ const setupDrawingControls = () => {
     map.value.on((L.Draw).Event.DRAWSTART, (e) => {
         // Clear all previously drawn items to ensure only one is being defined at a time
         drawnItems.value.clearLayers(); 
-        requiresBufferInput.value = (e.layerType === 'marker' || e.layerType === 'polyline');
-        bufferDistance.value = null;
+        // requiresBufferInput.value = (e.layerType === 'marker' || e.layerType === 'polyline');
+        // bufferDistance.value = null;
     });
 
     map.value.on((L.Draw).Event.CREATED, (e) => {
@@ -159,13 +152,13 @@ const setupDrawingControls = () => {
         }
 
         // Emit data. Buffer should only be non-zero for Point/Line.
-        const buffer = requiresBufferInput.value ? bufferDistance.value || 0 : 0;
+        // const buffer = requiresBufferInput.value ? bufferDistance.value || 0 : 0;
         
         const aoiData = {
             // CRITICAL FIX: Ensure GeoJSON object is cast correctly
             geometry: geoJsonFeature.geometry, 
             geometryType: geometryType,
-            buffer: buffer
+            // buffer: buffer
         };
 
         emit('aoi-drawn', aoiData);
@@ -197,7 +190,8 @@ const loadExistingAOIs = (aois) => {
                 // Attach click handler for responsiveness in Monitor/Display mode
                 if (props.isMonitorMode) {
                     layer.on('click', (e) => {
-                        selectedAoiDetails.value = aoi;
+                        // CRITICAL FIX: Emit the AOI details to the parent component
+                        emit('aoi-clicked', aoi);
                         // Center map on the clicked feature
                         map.value.setView(e.latlng, map.value.getZoom());
                     });
@@ -238,10 +232,21 @@ watch(() => props.aoisToDisplay, (newAois) => {
 
 <style scoped>
 .map-container {
-    height: 400px; /* Ensures the map div has a height */
+    min-height: 50vw; /* Ensures the map div has a height */
 }
 .map-view {
     height: 100%;
+}
+@media (max-width: 1024px) {
+    .map-container {
+        height: 60vw; /* Smaller height for mobile screens */
+    }
+}
+@media (max-width: 640px) {
+    .map-container {
+        /* Smaller height for mobile screens, but still generous */
+        min-height: 58vh; 
+    }
 }
 /* Style for Leaflet Draw toolbar buttons */
 :global(.leaflet-draw-toolbar a) {

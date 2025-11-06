@@ -1,4 +1,5 @@
-// REMOVED: import type { Express, Request, Response } from 'express';
+// AlertsSSEService.js
+
 import { Kafka } from 'kafkajs';
 import { createClient } from '@redis/client';
 import { DBClient } from '../db/DBClient.js'; // Used to look up which users are assigned to a project
@@ -74,55 +75,84 @@ async function runKafkaConsumer() {
                 const messageValue = message.value?.toString();
                 if (!messageValue) return;
 
+
+
+
                 try {
                     const data = JSON.parse(messageValue);
-                    // Debezium wraps the new row data in 'payload.after' for an INSERT operation (op='c')
                     const payload = data?.payload?.after;
                     if (!payload || data.payload.op !== 'c') {
                         console.log(`CDC: Skipping message (op: ${data?.payload?.op})`);
-                        return; // Only process new inserts/creations
+                        return;
                     }
-                    
-                    // --- CORE LOGIC: Find all users assigned to the project that triggered the alert ---
-                    const projectId = payload.project_id;
+
+                    // --- CORE LOGIC: Fetch all users' contact details for the project ---
+                    const mappingId = payload.mapping_id; // CRITICAL: Use the new mapping_id column
+
+                    // Step 1: Fetch Project ID, AOI ID, and Algo ID from aoi_algorithm_mapping
+                    const mappingResult = await db.query(
+                        `SELECT project_id, aoi_id, change_algo_id FROM aoi_algorithm_mapping WHERE id = $1`,
+                        [mappingId]
+                    );
+                    if (mappingResult.rows.length === 0) {
+                        console.log(`CDC: Mapping ID ${mappingId} not found. Skipping alert.`);
+                        return;
+                    }
+                    const { project_id, aoi_id, change_algo_id } = mappingResult.rows[0];
+
+                    // Step 2: Fetch all users (with contact details) associated with the project
                     const usersResult = await db.query(
-                        'SELECT user_id FROM users_to_project WHERE project_id = $1',
-                        [projectId]
+                        `SELECT u.user_id, u.email, u.contactno 
+                         FROM users_to_project up
+                         JOIN users u ON up.user_id = u.user_id
+                         WHERE up.project_id = $1`,
+                        [project_id] // Use the retrieved project_id
                     );
 
-                    // Extract all user IDs who are linked to this project
-                    const recipientUserIds = usersResult.rows.map(row => row.user_id);
+                    const recipientUsers = usersResult.rows;
 
-                    if (recipientUserIds.length === 0) {
-                        console.log(`CDC: No users found for project ${projectId}. Skipping alert.`);
+                    if (recipientUsers.length === 0) {
+                        console.log(`CDC: No users found for project ${project_id}. Skipping alert.`);
                         return;
                     }
 
                     // Structure the alert data for the frontend notification dropdown
                     const notification = {
-                        id: payload.id, // Primary key of the 'alerts' table row
+                        id: payload.id,
                         message: payload.message,
-                        projectId: projectId,
-                        aoiId: payload.aoi_fk_id,
+                        projectId: project_id,
+                        aoiId: aoi_id, // Use the retrieved aoi_id
+                        algoId: change_algo_id, // Use the retrieved algo_id
                         timestamp: payload.alert_timestamp,
-                        title: `Project Alert: ${projectId}`,
+                        title: `Project Alert: ${project_id} (${change_algo_id})`,
                     };
-                    
-                    // Process the alert for each recipient user
-                    for (const userId of recipientUserIds) {
-                        const notifString = JSON.stringify(notification);
-                        
-                        // 1. **REDIS Caching (Persistence for Offline Users)**
-                        await redisClient.lPush(`alerts:${userId}`, notifString);
-                        await redisClient.lTrim(`alerts:${userId}`, 0, 49);
 
-                        // 2. **SSE Delivery (Real-time Push)**
-                        sendToSSEClient(userId, notification);
+                    // Process the alert for each recipient user
+                    for (const user of recipientUsers) {
+                        const notifString = JSON.stringify(notification);
+
+                        // 1. REDIS Caching (Persistence for Offline Users)
+                        await redisClient.lPush(`alerts:${user.user_id}`, notifString);
+                        await redisClient.lTrim(`alerts:${user.user_id}`, 0, 49);
+
+                        // 2. SSE Delivery (Real-time Push)
+                        sendToSSEClient(user.user_id, notification);
+
+                        // 3. Dummy Email/SMS Push (Your Request)
+                        if (user.email) {
+                            console.log(`[Alert Push] Dummy Email SENT to ${user.email} (User: ${user.user_id})`);
+                        }
+                        if (user.contactno) {
+                            console.log(`[Alert Push] Dummy SMS SENT to ${user.contactno} (User: ${user.user_id})`);
+                        }
                     }
 
                 } catch (err) {
                     console.error('Error processing Kafka message:', err);
                 }
+
+
+
             },
         });
         console.log('⚡️ AlertsSSEService: Kafka consumer is running.');
@@ -170,11 +200,11 @@ export function initAlertsSSE(app) {
     // 2. Mark as Read API (Allows the client to clear an alert from their Redis history)
     app.post('/api/alerts/mark-read', async (req, res) => {
         const { userId, notificationId } = req.body;
-        
+
         try {
             // Fetches the current list of alert JSON strings from Redis
             const notifs = await redisClient.lRange(`alerts:${userId}`, 0, -1);
-            
+
             let countBefore = notifs.length;
             // Filter out the alert with the matching ID
             const filtered = notifs.filter(nn => {

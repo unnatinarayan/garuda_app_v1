@@ -1,3 +1,5 @@
+// ProjectModel.js
+
 import { DBClient } from '../db/DBClient.js';
 import { AreaOfInterestModel } from './AreaOfInterestModel.js';
 
@@ -9,18 +11,18 @@ const db = DBClient.getInstance();
 export class ProjectModel {
     // Properties matching the database columns
     id = null;
-    projectName; // Use internal name that matches the frontend/service DTO
+    projectName = ''; // Use internal name that matches the frontend/service DTO
     description = null;
-    createdByUserId;
+    createdByUserId = '';
     auxData = null;
     creationDate = null;
-    lastModifiedDate = null;
-
+    lastModifiedDate = null; // RENAMED: from lastModifiedDate
+    
     // Transient data for the 4-step process
     aois = [];
 
     /**
-     * @param {Object} data 
+     * @param {object} data - Data to initialize the model.
      */
     constructor(data) {
         this.id = data.id || null;
@@ -28,8 +30,8 @@ export class ProjectModel {
         this.description = data.description || null;
         this.createdByUserId = data.created_by_userid || '';
         this.auxData = data.auxdata || null;
-        this.creationDate = data.creation_timestamp || null; // <-- Use 'creation_timestamp'
-        this.lastModifiedDate = data.last_modified_timestamp || null; // <-- Use 'last_modified_timestamp'
+        this.creationDate = data.creation_timestamp || null;
+        this.lastModifiedDate = data.last_modified_timestamp || null; // <-- Update to new column name
     }
 
     /**
@@ -61,8 +63,7 @@ export class ProjectModel {
     /**
      * Updates an existing project's basic information.
      * Requires the transaction client for context.
-     * @param {any} client
-     * @returns {Promise<void>}
+     * @param {object} client - PG client for transaction support.
      */
     async update(client) {
         if (!this.id) throw new Error("Cannot update project: ID is missing.");
@@ -73,7 +74,7 @@ export class ProjectModel {
                 name = $1,
                 description = $2,
                 auxdata = $3,
-                last_modified_timestamp = NOW()
+                last_modified_timestamp = NOW() -- CRITICAL: Use new column name
             WHERE id = $4
             RETURNING last_modified_timestamp;
         `;
@@ -93,7 +94,6 @@ export class ProjectModel {
     /**
      * Fetches a project by its ID.
      * @param {number} id
-     * @returns {Promise<ProjectModel | null>}
      */
     static async findById(id) {
         const query = `SELECT * FROM project WHERE id = $1;`;
@@ -105,5 +105,4 @@ export class ProjectModel {
         return new ProjectModel(result.rows[0]);
     }
 
-    // Add update, delete, and other core methods here...
 }

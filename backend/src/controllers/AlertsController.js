@@ -1,5 +1,6 @@
-import { Router } from 'express';
+// AlertsController.js
 
+import { Router } from 'express';
 import { AlertsService } from '../services/AlertsService.js';
 
 /**
@@ -19,30 +20,27 @@ export class AlertsController {
         // POST /api/alerts - Endpoint to insert a new alert
         this.router.post('/', this.recordAlert);
 
-        // You would add GET/DELETE/etc. routes here later
     }
 
     /**
      * Express handler to record a new alert based on the request body.
+     * Expects: { mapping_id: number, message: object }
      */
     recordAlert = async (req, res, next) => {
         try {
-            // No need for TypeScript casting
             const payload = req.body;
-
-            // Assuming the project_id, aoi_id, and algo_id are valid FKs
-            // This relies on the database to throw an error if the FKs are invalid.
+            // Payload should now only contain mapping_id and message
+            if (!payload.mapping_id || !payload.message) {
+                 return res.status(400).json({ error: 'Missing required fields: mapping_id or message.' });
+            }
 
             const newAlert = await this.alertsService.recordNewAlert(payload);
 
-            // Respond with the newly created alert details (including the generated ID and timestamp)
             res.status(201).json({
                 message: 'Alert successfully recorded.',
                 alert: {
                     id: newAlert.id,
-                    project_id: newAlert.projectId,
-                    aoi_id: newAlert.aoiId, // <-- Use new property name
-                    algo_id: newAlert.algoId, // <-- Use new property name
+                    mapping_id: newAlert.mappingId,
                     message: newAlert.message,
                     alert_timestamp: newAlert.alertTimestamp
                 }

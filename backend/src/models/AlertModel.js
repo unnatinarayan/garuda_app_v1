@@ -1,30 +1,28 @@
+// AlertModel.js
+
 import { DBClient } from '../db/DBClient.js';
-// REMOVED: import type { QueryResult } from 'pg';
 
 const db = DBClient.getInstance();
 
 /**
  * AlertModel: Handles persistence and retrieval logic for the 'alerts' table.
+ * Now links directly to aoi_algorithm_mapping via mapping_id.
  */
 export class AlertModel {
     id = null;
-    projectId;
-    aoiId;
-    algoId;
     message = {};
     alertTimestamp = null;
+    mappingId = null; // NEW: FK to aoi_algorithm_mapping.id
 
     /**
      * Initializes a new AlertModel instance.
-     * @param {Object} data - Partial data to initialize the model.
+     * @param {object} data - Data to initialize the model.
      */
     constructor(data) {
         this.id = data.id || null;
-        this.projectId = data.project_id;
-        this.aoiId = data.aoi_id;
-        this.algoId = data.algo_id;
         this.message = data.message || {};
         this.alertTimestamp = data.alert_timestamp || null;
+        this.mappingId = data.mapping_id || null; // NEW
     }
 
     /**
@@ -32,20 +30,18 @@ export class AlertModel {
      * @returns {Promise<number>} The ID of the newly created alert.
      */
     async save() {
-        if (!this.projectId || !this.aoiId || !this.algoId) {
-            throw new Error("Alert must reference a Project, AOI, and Algorithm.");
+        if (!this.mappingId || !this.message) {
+            throw new Error("Alert must reference a Mapping ID and contain a message.");
         }
 
         const query = `
-            INSERT INTO alerts
-            (project_id, aoi_id, algo_id, message)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO alerts 
+            (mapping_id, message, alert_timestamp) 
+            VALUES ($1, $2, NOW())
             RETURNING id, alert_timestamp;
         `;
         const values = [
-            this.projectId,
-            this.aoiId,
-            this.algoId,
+            this.mappingId,
             this.message
         ];
         
@@ -56,19 +52,8 @@ export class AlertModel {
     }
 
     /**
-     * Fetches all alerts associated with a specific project.
-     * @param {number} projectId - The ID of the project.
-     * @returns {Promise<AlertModel[]>} An array of AlertModel instances.
-     */
-    static async findByProjectId(projectId) {
-        const query = `SELECT * FROM alerts WHERE project_id = $1 ORDER BY alert_timestamp DESC;`;
-        const result = await db.query(query, [projectId]);
-
-        return result.rows.map(row => new AlertModel(row));
-    }
-    
-    /**
      * Counts the total number of alerts for a given user across all their projects.
+     * Requires joining users_to_project -> aoi_algorithm_mapping -> alerts.
      * @param {string} userId - The ID of the user.
      * @returns {Promise<number>} The total count of alerts.
      */
@@ -76,7 +61,8 @@ export class AlertModel {
         const query = `
             SELECT COUNT(a.id)
             FROM alerts a
-            JOIN users_to_project up ON a.project_id = up.project_id
+            JOIN aoi_algorithm_mapping aam ON a.mapping_id = aam.id
+            JOIN users_to_project up ON aam.project_id = up.project_id
             WHERE up.user_id = $1;
         `;
         const result = await db.query(query, [userId]);

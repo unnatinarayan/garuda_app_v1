@@ -1,3 +1,5 @@
+// UsersToProjectModel.js
+
 import { DBClient } from '../db/DBClient.js';
 
 const db = DBClient.getInstance();
@@ -7,38 +9,33 @@ const db = DBClient.getInstance();
  */
 export class UsersToProjectModel {
     id = null;
-    userId;
-    projectId;
-    role;
+    userId = null;
+    projectId = null;
+    userRole = null; // CRITICAL CHANGE: Renamed from 'role' to 'userRole'
 
-    /**
-     * @param {Object} data
-     */
     constructor(data) {
         this.id = data.id || null;
         this.userId = data.user_id;
         this.projectId = data.project_id;
-        this.role = data.role;
+        this.userRole = data.user_role; // CRITICAL CHANGE: Uses 'user_role' from DB
     }
 
 
     /**
      * Saves a user-to-project role assignment (will UPSERT if the user/project pair exists).
-     * @param {any} client
-     * @returns {Promise<number>}
+     * @param {object} client - PG client for transaction support.
      */
-    async save(client) { // Added client for transaction support
+    async save(client) {
         const query = `
-            INSERT INTO users_to_project
-            (user_id, project_id, role)
+            INSERT INTO users_to_project 
+            (user_id, project_id, user_role) -- CRITICAL: Use 'user_role'
             VALUES ($1, $2, $3)
-            ON CONFLICT (user_id, project_id)
-            DO UPDATE SET role = EXCLUDED.role
+            ON CONFLICT (user_id, project_id) 
+            DO UPDATE SET user_role = EXCLUDED.user_role -- CRITICAL: Use 'user_role'
             RETURNING id;
         `;
-        const values = [this.userId, this.projectId, this.role];
+        const values = [this.userId, this.projectId, this.userRole];
         
-        // Use the passed client for transaction context
         const result = await client.query(query, values);
         this.id = result.rows[0].id;
         return this.id;
@@ -46,38 +43,29 @@ export class UsersToProjectModel {
 
     /**
      * Deletes all user assignments for a project, excluding a list of users.
-     * @param {any} client
-     * @param {number} projectId
-     * @param {string[]} userIdsToKeep
-     * @returns {Promise<number>}
+     * This handles users that were removed in the frontend UI.
      */
     static async deleteExcludedUsers(client, projectId, userIdsToKeep) {
         const query = `
-            DELETE FROM users_to_project
-            WHERE project_id = $1
+            DELETE FROM users_to_project 
+            WHERE project_id = $1 
             AND user_id NOT IN (SELECT unnest($2::text[]));
         `;
         const result = await client.query(query, [projectId, userIdsToKeep]);
         return result.rowCount;
     }
 
-    /**
-     * Fetches all projects a user is assigned to.
-     * @param {string} userId
-     * @returns {Promise<UsersToProjectModel[]>}
-     */
+    
+
     static async findProjectsByUserId(userId) {
-        const query = `SELECT * FROM users_to_project WHERE user_id = $1;`;
+        const query = `SELECT id, user_id, project_id, user_role FROM users_to_project WHERE user_id = $1;`; 
         const result = await db.query(query, [userId]);
         
-        return result.rows.map(row => new UsersToProjectModel(row));
+        return result.rows.map(row => new UsersToProjectModel(row)); // Constructor handles mapping user_role
     }
     
     /**
      * Deletes a user-to-project assignment.
-     * @param {string} userId
-     * @param {number} projectId
-     * @returns {Promise<boolean>}
      */
     static async delete(userId, projectId) {
         const query = `DELETE FROM users_to_project WHERE user_id = $1 AND project_id = $2;`;

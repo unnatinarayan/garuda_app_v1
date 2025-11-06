@@ -48,45 +48,69 @@ const handleLogout = () => {
 
 
 <template>
-  <div id="home-view" class="main-container  flex items-center justify-center" style="background-color: var(--bg-color);">
-    <div class="w-full max-w-2xl mx-auto p-8 rounded-2xl app-card text-center pt-20"> 
-        <h1 class="text-5xl font-extrabold mb-2 tracking-tight" style="color: var(--text-color);">Welcome {{ session.username || 'Admin' }}</h1>
-        <p class="text-lg mb-10" style="color: var(--accent-color);">Geospatial Area Monitoring with Unified Data Analytics</p>
+    <div id="home-view" class="main-container  flex items-center justify-center"
+        style="background-color: var(--bg-color);">
+        <div class="w-full max-w-2xl mx-auto p-4 rounded-2xl app-card text-center">
+            <!-- <h1 class="text-5xl font-extrabold mb-2 tracking-tight" style="color: var(--text-color);">Welcome {{ session.username || 'Admin' }}</h1>
+        <p class="text-lg mb-10" style="color: var(--accent-color);">Geospatial Area Monitoring with Unified Data Analytics</p> -->
 
-        <div class="flex justify-center space-x-4 mb-12 text-sm">
-            <div class="px-4 py-2 app-card-item rounded-xl">
-                <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
-                <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
-            </div>
-            <div class="px-4 py-2 app-card-item rounded-xl">
-                <p class="text-gray-400" style="color: var(--text-muted);">Active Alerts</p>
-                <p class="font-bold text-xl" :style="{color: activeAlerts > 0 ? '#dc2626' : 'var(--text-color)'}">{{ activeAlerts }}</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <div @click="handleAddProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-blue-600 shadow-xl" style="background-color: var(--card-bg);">
-                <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Add Project</h2>
-                <p class="text-sm" style="color: var(--text-muted);">Define a new Area of Interest (AOI) and monitoring rules.</p>
+            <div class="flex justify-center space-x-4 mb-12 text-sm">
+                <div class="px-4 py-2 app-card-item rounded-xl">
+                    <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
+                    <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
+                </div>
+                <div class="px-4 py-2 app-card-item rounded-xl">
+                    <p class="text-gray-400" style="color: var(--text-muted);">Total Alerts</p>
+                    <p class="font-bold text-xl" :style="{color: activeAlerts > 0 ? '#dc2626' : 'var(--text-color)'}">{{
+                        activeAlerts }}</p>
+                </div>
             </div>
 
-            <div @click="handleManageProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-orange-600 shadow-xl" style="background-color: var(--card-bg);">
-                <svg class="w-12 h-12 mx-auto text-orange-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.294.58 3.35 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Manage Projects</h2>
-                <p class="text-sm" style="color: var(--text-muted);">View, filter, edit details, and modify users for existing AOIs.</p>
-            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            <div @click="handleMonitorProject" class="cursor-pointer p-6 rounded-2xl border-b-4 border-purple-600 shadow-xl" style="background-color: var(--card-bg);">
-                 <svg class="w-12 h-12 mx-auto text-purple-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Monitor Projects</h2>
-                <p class="text-sm" style="color: var(--text-muted);">Real-time geospatial visualization and alert analysis.</p>
-            </div>
+                <div @click="handleAddProject"
+                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-blue-600 shadow-xl"
+                    style="background-color: var(--card-bg);">
+                    <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Add Project</h2>
+                    <!-- <p class="text-sm" style="color: var(--text-muted);">Define a new Area of Interest (AOI) and monitoring rules.</p> -->
+                </div>
 
+                <div @click="handleManageProject"
+                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-orange-600 shadow-xl"
+                    style="background-color: var(--card-bg);">
+                    <svg class="w-12 h-12 mx-auto text-orange-400 mb-3" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.294.58 3.35 0z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Manage Projects</h2>
+                    <!-- <p class="text-sm" style="color: var(--text-muted);">View, filter, edit details, and modify users for existing AOIs.</p> -->
+                </div>
+
+                <div @click="handleMonitorProject"
+                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-purple-600 shadow-xl"
+                    style="background-color: var(--card-bg);">
+                    <svg class="w-12 h-12 mx-auto text-purple-400 mb-3 fill-none stroke-current" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M12 4.5C7 4.5 2.73 7.5 1 12c1.73 4.5 6 7.5 11 7.5s9.27-3 11-7.5c-1.73-4.5-6-7.5-11-7.5z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Monitor Projects</h2>
+                    <!-- <p class="text-sm" style="color: var(--text-muted);">Real-time geospatial visualization and alert analysis.</p> -->
+                </div>
+
+            </div>
         </div>
     </div>
-  </div>
 </template>
 
 

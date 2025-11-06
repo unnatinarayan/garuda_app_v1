@@ -1,3 +1,5 @@
+<!-- DisplayProjectUI.vue  -->
+
 <script setup>
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -105,7 +107,7 @@ const goBack = () => {
 </script>
 
 <template>
-  <div id="manage-view" class="min-h-screen bg-gray-900 text-white flex justify-center pt-20">
+  <div id="manage-view" class="min-h-screen bg-gray-900 text-white flex justify-center pt-10">
     <div class="w-full max-w-4xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-6 relative">
         
         <!-- Header for Manage View -->

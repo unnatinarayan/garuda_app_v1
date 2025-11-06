@@ -1,18 +1,9 @@
+// ProjectService.js
+
 import { DBClient } from '../db/DBClient.js';
-
 import { ProjectModel } from '../models/ProjectModel.js';
-// REMOVED: import type { ProjectData } from '../models/ProjectModel.js';
-
 import { AreaOfInterestModel } from '../models/AreaOfInterestModel.js';
-// REMOVED: import type { AreaOfInterestData } from '../models/AreaOfInterestModel.js';
-
-// REMOVED: import type { GeoJsonPolygon } from '../types/GeoJson.js';
-
-// REMOVED: import { AoiAlgorithmMappingModel } from '../models/AoiAlgorithmMappingModel.js';
-// REMOVED: import { UsersToProjectModel } from '../models/UsersToProjectModel.js';
-// REMOVED: import type { UsersToProjectData } from '../models/UsersToProjectModel.js';
 import { AlgorithmCatalogueModel } from '../models/AlgorithmCatalogueModel.js';
-// REMOVED: import type { AlgorithmCatalogueData } from '../models/AlgorithmCatalogueModel.js';
 
 const db = DBClient.getInstance();
 
@@ -152,9 +143,9 @@ export class ProjectService {
 
             for (const user of bundle.userData) {
                 const userQuery = `
-                    INSERT INTO users_to_project (user_id, project_id, role)
+                    INSERT INTO users_to_project (user_id, project_id, user_role)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT (user_id, project_id) DO UPDATE SET role = EXCLUDED.role;
+                    ON CONFLICT (user_id, project_id) DO UPDATE SET user_role = EXCLUDED.user_role;
                 `;
                 await client.query(userQuery, [user.userId, projectId, user.role]);
             }
@@ -287,9 +278,9 @@ export class ProjectService {
             // B. Upsert (Insert or Update Role) for the remaining/new users
             for (const user of bundle.userData) {
                 const userQuery = `
-                    INSERT INTO users_to_project (user_id, project_id, role)
+                    INSERT INTO users_to_project (user_id, project_id, user_role)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT (user_id, project_id) DO UPDATE SET role = EXCLUDED.role;
+                    ON CONFLICT (user_id, project_id) DO UPDATE SET user_role = EXCLUDED.user_role;
                 `;
                 await client.query(userQuery, [user.userId, projectId, user.role]);
             }
@@ -318,7 +309,7 @@ export class ProjectService {
         const query = `
             SELECT
                 p.id, p.name as project_name, p.description, p.creation_timestamp, p.last_modified_timestamp, p.created_by_userid, p.auxdata,
-                up.role
+                up.user_role as role
             FROM project p
             JOIN users_to_project up ON p.id = up.project_id
             WHERE up.user_id = $1
@@ -350,7 +341,7 @@ export class ProjectService {
 
             // 2. Fetch Users
             const userResult = await client.query(`
-                SELECT user_id, role FROM users_to_project WHERE project_id = $1;
+                SELECT user_id, user_role FROM users_to_project WHERE project_id = $1;
             `, [projectId]);
 
             // 3. Fetch AOIs and 4. Fetch Mapped Algorithms for each AOI

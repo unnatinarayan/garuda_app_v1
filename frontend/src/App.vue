@@ -145,10 +145,10 @@ const profileInitials = computed(() => {
         
         <div class="flex items-center space-x-4">
             
-            <button @click="toggleTheme" class="p-2 transition-colors duration-200" :style="{color: isDarkMode ? 'var(--accent-color)' : 'var(--text-muted)'}">
+            <!-- <button @click="toggleTheme" class="p-2 transition-colors duration-200" :style="{color: isDarkMode ? 'var(--accent-color)' : 'var(--text-muted)'}">
                 <svg v-if="isDarkMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            </button>
+            </button> -->
 
 
             <NotificationDropdown />
@@ -161,7 +161,10 @@ const profileInitials = computed(() => {
     <main class="app-content" :class="{'pt-20': showNavbar}"> 
       <RouterView />
     </main>
-  </div>
+    <footer class="app-footer">
+  <h1 class="text-center text-lg font-bold text-white">Copyright &copy; Garuda SAC</h1>
+</footer>
+ </div>
 </template>
 
 
@@ -213,8 +216,43 @@ body {
 
 .app-content {
   /* Retain padding on the sides, but let pt-20 handle the top spacing */
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-bottom: 20px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 70px;
+  min-height: 100vh;
+}
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #333; /* Add your desired background color */
+  padding: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .app-footer {
+    padding: 0.5rem;
+    height: 40px;
+  }
+}
+@media (max-width: 640px) {
+    .app-content {
+        padding-left: 5px; 
+        padding-right: 5px;
+        padding-bottom: 55px;
+    }
+    /* Ensure the wrapper inside configure UI is full width on mobile */
+    .configure-project-ui .w-full.max-w-6xl.mx-auto {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 5px;
+    }
+
+}
+.app-content > div {
+    min-height: 100%;
 }
 </style>

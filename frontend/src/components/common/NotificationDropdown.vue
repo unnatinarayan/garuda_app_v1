@@ -1,3 +1,4 @@
+<!-- NotificationDropdown.vue -->
 <script setup>
 import { ref, computed } from 'vue';
 import { useProjectStore } from '@/stores/ProjectStore.js';
@@ -74,7 +75,8 @@ const handleAlertClick = (alert) => {
         </button>
 
         <div v-if="isDropdownOpen" 
-             class="absolute right-0 mt-3 w-80 bg-gray-700 rounded-lg shadow-xl z-30 ring-1 ring-black ring-opacity-5"
+             class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-30 ring-1 ring-black ring-opacity-5 
+                    w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]"
         >
             <div class="p-3 border-b border-gray-600">
                 <h3 class="text-lg font-semibold text-white">Alerts ({{ totalAlerts }})</h3>
@@ -87,24 +89,31 @@ const handleAlertClick = (alert) => {
                 
                 <div v-for="alert in alerts" :key="alert.id"
                      @click="handleAlertClick(alert)"
-                     class="p-3 border-b border-gray-600 cursor-pointer hover:bg-gray-600 transition duration-150"
+                     class="flex flex-col p-3 border-b border-gray-600 cursor-pointer hover:bg-gray-600 transition duration-150"
                 >
-                    <div class="flex items-center justify-between">
-                        <div class="truncate pr-4">
-                            <p class="text-sm font-semibold text-cyan-400 truncate">{{ alert.title }}</p>
-                            <p class="text-xs text-white">{{ alert.message.detail || alert.message }}</p>
-                            <p class="text-xs text-gray-400 mt-1">
-                                Project: {{ alert.projectId }} | {{ new Date(alert.timestamp).toLocaleTimeString() }}
+                    <div class="flex items-start justify-between">
+                        <div class="flex-grow pr-4">
+                            <p class="text-sm font-semibold text-cyan-400 break-words">{{ alert.title }}</p>
+                            <p class="text-xs text-white break-words mt-1">
+                                {{ alert.message.detail || JSON.stringify(alert.message).substring(0, 50) + '...' }}
                             </p>
                         </div>
                         
                         <button @click.stop="markAsRead(alert)" 
-                                class="text-red-400 hover:text-red-300 ml-2 p-1 rounded-full"
+                                class="text-red-400 hover:text-red-300 ml-2 p-1 rounded-full flex-shrink-0"
                                 title="Dismiss Alert"
                         >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
+
+                    <p class="text-xs text-gray-400 mt-2">
+                        <span class="font-medium">Project ID:</span> {{ alert.projectId }} | 
+                        <span class="font-medium">AOI:</span> {{ alert.aoiId }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                         {{ new Date(alert.timestamp).toLocaleTimeString() }} {{ new Date(alert.timestamp).toLocaleDateString() }}
+                    </p>
                 </div>
             </div>
             
@@ -116,8 +125,6 @@ const handleAlertClick = (alert) => {
 </template>
 
 <style scoped>
-/* Scoped styles can be added here if Tailwind utility classes are insufficient */
-.notification-container {
-    /* Ensure proper context for absolute positioning */
-}
+/* Scoped styles are fine as is */
 </style>
+

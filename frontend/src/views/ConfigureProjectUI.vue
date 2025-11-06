@@ -122,23 +122,38 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
 
 </script>
 
+
+
 <template>
     <div v-if="isDataLoading" class="loading-message">Loading existing project data...</div>
-    <div v-else class="configure-project-ui bg-gray-900 text-white">
+    <div v-else class="configure-project-ui bg-gray-900 text-white" style="display: flex; align-items: center;">
+
+        <div class="fixed top-16 left-0 right-0  p-3 bg-gray-700 shadow-lg border-b border-gray-600 z-100">
+            <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
+                
+                <button 
+                    class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base" 
+                    @click="goBack"
+                >
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span class="hidden sm:inline">{{ isMenuMode ? 'Back to Home' : 'Back to Menu' }}</span>
+                    <span class="sm:hidden">Back</span>
+                </button>
+
+                <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
+                    {{ isUpdateMode ? 'Update Project: ' : 'Add New Project' }}
+                    <span v-if="projectName && isUpdateMode" class="text-cyan-400">{{ projectName }}</span>
+                </h1>
+            </div>
+        </div>
+
         <div class="w-full max-w-6xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-6 relative pt-10">
 
-            <!-- Header -->
-            <header class="pb-4 app-header mb-6">
-                <button class="mb-4 text-cyan-400 hover:text-cyan-300 transition duration-150" @click="goBack">
-                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    {{ isMenuMode ? 'Back to Home' : 'Back to Menu' }}
-                </button>
-                <h1 class="text-3xl font-bold text-white">{{ isUpdateMode ? 'Update Project' : 'Add New Project' }}</h1>
-            </header>
+            
 
             <!-- 1. Selection Menu (Visible when isMenuMode is true) -->
-            <div v-if="isMenuMode" id="add-select-menu">
-                <p class="mb-6 text-gray-400">Select a step to begin configuring your project:</p>
+            <div v-if="isMenuMode" id="add-select-menu" class="">
+                <!-- <p class="mb-6 text-gray-400">Select a step to begin configuring your project:</p> -->
                 
                 <div class="space-y-4">
                     <!-- Step 1: Basic Info -->
@@ -184,7 +199,7 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
             <div v-else id="add-step-form">
                 
                 <!-- Progress Bar -->
-                <div class="flex justify-between items-center relative mb-10 mt-4">
+                <div class="flex justify-between items-center relative mb-2 mt-2">
                     <template v-for="step in 4" :key="step">
                         <!-- Step Indicator -->
                         <div class="w-1/4 flex flex-col items-center relative z-10">
@@ -217,7 +232,7 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
                 </div>
                 
                 <!-- Step Content -->
-                <div class="step-content border border-gray-700 p-4 rounded-xl">
+                <div class="step-content border border-gray-700 py-4 rounded-xl">
                     <Step1BasicInfo v-if="currentStep === 1" :project-data="projectForm" />
                     <Step2DefineAOI v-if="currentStep === 2" :project-data="projectForm" />
                     <Step3AlgoMapping v-if="currentStep === 3" :project-data="projectForm" />
@@ -245,7 +260,7 @@ const isStepVisited = (step) => step < currentStep.value || (step === currentSte
 
 
 <style scoped>
-.configure-project-ui { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 50px; }
+.configure-project-ui { min-height: 80vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 50px; }
 .step-content { min-height: 350px; }
 .navigation-controls { display: flex; justify-content: space-between; gap: 10px; }
 .btn-primary, .btn-secondary, .btn-submit { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; }

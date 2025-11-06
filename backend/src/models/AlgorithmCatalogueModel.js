@@ -1,3 +1,6 @@
+// AlgorithmCatalogueModel.js
+
+
 import { DBClient } from '../db/DBClient.js';
 
 const db = DBClient.getInstance();

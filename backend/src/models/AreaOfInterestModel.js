@@ -1,5 +1,6 @@
+// AreaOfInterestModel.js 
+
 import { DBClient } from '../db/DBClient.js';
-// REMOVED: import type { GeoJsonPolygon } from '../types/GeoJson.ts'; // We will define this type below
 
 const db = DBClient.getInstance();
 

@@ -1,15 +1,15 @@
+<!-- Step1BasicInfo.vue  -->
+
 <script setup>
-// REMOVED: import { type AuxDataDraft } from '@/classes/ProjectFormData';
 import { ref } from 'vue';
 import { useProjectStore } from '@/stores/ProjectStore.js'; // Import the store
 
-// We no longer need the prop, we use the store directly
 const projectStore = useProjectStore(); 
 const projectData = projectStore.projectForm; // Still keep a reference for auxDataDrafts
 
-// Local reactive properties for aux data inputs only
 const newAuxKey = ref('');
 const newAuxValue = ref('');
+const showNewAuxFields = ref(false);
 
 const addAuxData = () => {
     if (newAuxKey.value && newAuxValue.value) {
@@ -20,6 +20,7 @@ const addAuxData = () => {
         }); // REMOVED: as AuxDataDraft
         newAuxKey.value = '';
         newAuxValue.value = '';
+        showNewAuxFields.value = false;
     }
 };
 
@@ -42,8 +43,55 @@ const removeAuxData = (key) => {
       <textarea v-model="projectStore.description" rows="3" class="w-full p-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500"></textarea>
     </div>
 
-    <h4 class="text-lg font-semibold text-cyan-400 mt-6 mb-3">Custom Auxiliary Data (JSONB)</h4>
-    <div class="aux-data-entry flex gap-3 mb-4">
+    <!-- <h4 class="text-lg font-semibold text-cyan-400 mt-6 mb-3">Custom Auxiliary Data (JSONB)</h4> -->
+
+    <button 
+        @click="showNewAuxFields = true" 
+        v-if="!showNewAuxFields"
+        class="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200 mb-4"
+    >
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        Add More Fields
+    </button>
+
+    <div v-if="showNewAuxFields" class="aux-data-entry space-y-3 mb-4 p-4 bg-gray-700 rounded-lg">
+        <div class="flex flex-col sm:flex-row gap-3"> 
+            <input type="text" v-model="newAuxKey" placeholder="Key (e.g., Client)" class="w-full sm:w-1/3 p-2 bg-gray-600 text-white rounded border border-gray-500" />
+            <input type="text" v-model="newAuxValue" placeholder="Value (e.g., NASA)" class="w-full sm:w-2/3 p-2 bg-gray-600 text-white rounded border border-gray-500" />
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-1">
+            
+            <button 
+                @click="showNewAuxFields = false" 
+                class="p-0 mt-5 text-red-400 hover:text-red-500 font-bold flex-shrink-0" style="height: 26px;
+    width: 20px; font-size: 1rem;" 
+                title="Cancel"
+            >
+                &times;
+            </button>
+            
+            <button 
+                @click="addAuxData" 
+                class="px-2  py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition duration-150"
+                title="Save this custom field"
+            >
+                Save Field
+            </button>
+        </div>
+    </div>
+
+    <div class="aux-list space-y-2 max-h-40 overflow-y-auto">
+        <div v-for="draft in projectData.auxDataDrafts" :key="draft.key" class="aux-item flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600">
+            <span class="text-gray-300 truncate w-[85%]">{{ draft.key }}: <span class="text-white font-mono">{{ draft.value }}</span></span>
+            <button @click="removeAuxData(draft.key)" class="text-red-400 hover:text-red-500 font-bold flex-shrink-0" style="height: 32px;
+    width: 24px;">x</button>
+        </div>
+        <p v-if="projectData.auxDataDrafts.length === 0" class="text-center text-gray-400 p-2 text-sm">No custom fields defined.</p>
+    </div>
+
+
+    <!-- <div class="aux-data-entry flex gap-3 mb-4">
         <input type="text" v-model="newAuxKey" placeholder="Key (e.g., Client)" class="p-2 bg-gray-700 text-white rounded border border-gray-600" />
         <input type="text" v-model="newAuxValue" placeholder="Value (e.g., NASA)" class="p-2 bg-gray-700 text-white rounded border border-gray-600" />
         <button @click="addAuxData" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Add Field</button>
@@ -53,7 +101,7 @@ const removeAuxData = (key) => {
             <span class="text-gray-300">{{ draft.key }}: <span class="text-white font-mono">{{ draft.value }}</span></span>
             <button @click="removeAuxData(draft.key)" class="text-red-400 hover:text-red-500 font-bold">x</button>
         </div>
-    </div>
+    </div> -->
   </div>
 </template>
 

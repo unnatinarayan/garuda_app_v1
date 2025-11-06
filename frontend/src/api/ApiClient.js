@@ -45,7 +45,7 @@ export class ApiClient {
     }
 
     async signup(username, password) {
-        const response = await this.client.post('/auth/signup', { username, password });
+        const response = await this.client.post('/auth/signup', { username, password, email, contactno });
         const { userId, username: returnedUsername } = response.data;
         return { userId, username: returnedUsername };
     }
@@ -82,5 +82,4 @@ export class ApiClient {
         await this.client.delete(`/projects/${projectId}`);
     }
     
-    // Add updateProject, deleteProject methods here...
 }
