@@ -149,7 +149,6 @@ onMounted(async () => {
 
 <template>
     <div class="p-4">
-        <h3 class="text-xl font-bold text-white mb-4">Step 3: Configure AOI Watch</h3>
         
         <div v-if="projectData.aoiDrafts.length === 0" class="bg-red-800 p-3 rounded text-white mb-4">
             You must define at least one AOI in Step 2 before configuring algorithms.

@@ -69,7 +69,7 @@ const handleLogout = () => {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 <div @click="handleAddProject"
-                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-blue-600 shadow-xl"
+                    class="cursor-pointer p-3 rounded-2xl border-b-4 border-blue-600 shadow-xl"
                     style="background-color: var(--card-bg);">
                     <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -81,7 +81,7 @@ const handleLogout = () => {
                 </div>
 
                 <div @click="handleManageProject"
-                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-orange-600 shadow-xl"
+                    class="cursor-pointer p-3 rounded-2xl border-b-4 border-orange-600 shadow-xl"
                     style="background-color: var(--card-bg);">
                     <svg class="w-12 h-12 mx-auto text-orange-400 mb-3" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -96,7 +96,7 @@ const handleLogout = () => {
                 </div>
 
                 <div @click="handleMonitorProject"
-                    class="cursor-pointer p-6 rounded-2xl border-b-4 border-purple-600 shadow-xl"
+                    class="cursor-pointer p-3 rounded-2xl border-b-4 border-purple-600 shadow-xl"
                     style="background-color: var(--card-bg);">
                     <svg class="w-12 h-12 mx-auto text-purple-400 mb-3 fill-none stroke-current" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">

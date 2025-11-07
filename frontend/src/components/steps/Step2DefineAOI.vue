@@ -4,7 +4,7 @@
 import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { AreaOfInterestDraft } from '@/classes/AreaOfInterestDraft.js';
 import MapVisualization from '@/components/map/MapVisualization.vue';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 
 const props = defineProps({
   projectData: ProjectFormData,
@@ -27,7 +27,7 @@ let aoiCounter = props.projectData.aoiDrafts.length > 0
 
 // Computed properties for UI logic
 const requiresBuffer = computed(() => ['Point', 'LineString'].includes(currentAoiType.value));
-
+const mapVizRef = ref(null);
 
 // The main method called by the MapVisualization component when a geometry is drawn
 const handleAoiDrawn = (data) => {
@@ -56,7 +56,7 @@ const removeAuxField = (index) => {
 
 
 // Function to finalize AOI after form submission
-const finalizeAOI = () => {
+const finalizeAOI = async () => {
     if (!currentAoiName.value.trim()) {
         alert('AOI Name is required.');
         return;
@@ -92,6 +92,11 @@ const finalizeAOI = () => {
     
     // 3. Add to the ProjectFormData
     props.projectData.aoiDrafts.push(newAOI);
+
+    if (mapVizRef.value?.drawnItems) {
+        // Clear all layers managed by Leaflet.Draw's internal FeatureGroup
+        mapVizRef.value.drawnItems.clearLayers();
+    }
     
     // 4. Clean up and close
     aoiCounter++;
@@ -113,14 +118,19 @@ const removeAOI = (clientAoiId) => {
 
 <template>
     <div>
-        <h3 class="text-xl font-bold text-white mb-1">Step 2: Define Areas of Interest (AOI)</h3>
         
         <div>
             <MapVisualization 
                 @aoi-drawn="handleAoiDrawn" 
                 :aois-to-display="projectData.aoiDrafts"
                 :is-monitor-mode="false"
+                ref="mapVizRef"
             />
+            <!-- <MapVisualization 
+                @aoi-drawn="handleAoiDrawn" 
+                :aois-to-display="projectData.aoiDrafts"
+                :is-monitor-mode="false"
+            /> -->
         </div>
 
         <h4 class="text-lg font-semibold mt-4 text-cyan-400">Draft AOIs ({{ projectData.aoiDrafts.length }})</h4>

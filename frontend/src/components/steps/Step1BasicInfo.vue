@@ -32,7 +32,6 @@ const removeAuxData = (key) => {
 
 <template>
   <div>
-    <h3 class="text-xl font-bold text-white mb-4">Step 1: Project Basic Info</h3>
     
     <div class="form-group mb-4">
       <label class="text-gray-400">Project Name:</label>

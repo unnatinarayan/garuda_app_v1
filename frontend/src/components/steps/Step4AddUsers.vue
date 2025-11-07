@@ -40,7 +40,6 @@ const removeUser = (userId) => {
 
 <template>
   <div class="p-4 bg-gray-800 rounded-lg text-white">
-    <h3 class="text-xl font-bold mb-4 text-white">Step 4: Add Users and Roles</h3>
 
     <div class="user-entry flex flex-col sm:flex-row gap-3 mb-6 p-4 bg-gray-700 rounded-lg shadow-inner">
         

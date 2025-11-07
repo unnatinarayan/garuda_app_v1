@@ -141,8 +141,15 @@ const profileInitials = computed(() => {
         <div class="flex items-center space-x-2 cursor-pointer" @click="goToHome">
              <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-10 w-auto">
         </div>
+
         
         <div class="flex items-center space-x-4">
+            <div class="flex text-gray-400 items-center space-x-2 cursor-pointer" @click="goToHome">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+</svg>
+        </div>
             <NotificationDropdown />
             
             <div @click="handleLogout" title="Logout" class="cursor-pointer w-9 h-9 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm hover:bg-red-500 transition-colors duration-200">
@@ -154,7 +161,7 @@ const profileInitials = computed(() => {
       <RouterView />
     </main>
     <footer class="app-footer">
-  <h1 class="text-center text-sm font-bold text-white">Copyright &copy; VEDAS SAC ISRO</h1>
+  <h1 class="text-center text-sm font-bold text-white">Copyright &copy; 2025 VEDAS SAC ISRO </h1>
 </footer>
  </div>
 </template>
