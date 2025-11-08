@@ -81,7 +81,7 @@ watchEffect(() => {
 
     const userId = session.userId;
     // Show navbar/layout elements only if the user is logged in AND not on the login page
-    showNavbar.value = session.isLoggedIn && route.name !== 'login';
+    showNavbar.value = route.name !== 'login';
     // console.log(session.isLoggedIn);
 
     if (session.isLoggedIn && userId) {
@@ -137,7 +137,7 @@ const profileInitials = computed(() => {
         <p class="mt-4 text-sm tracking-wider" style="color: var(--accent-color);"><b>G</b>eospatial <b>Ar</b>ea Monitoring with <b>U</b>nified <b>D</b>ata <b>A</b>nalytics</p>
     </div>
     
-<div v-if="showNavbar"  class="fixed top-0 left-0 right-0 px-8 py-3 flex justify-between items-center z-20 shadow-md transition-colors duration-300" style="background-color: var(--container-bg); border-bottom: 1px solid var(--header-border);">        
+<div v-if="showNavbar"  class="fixed top-0 left-0 right-0 px-8 py-2 flex justify-between items-center z-20 shadow-md transition-colors duration-300" style="background-color: var(--container-bg); border-bottom: 1px solid var(--header-border);">        
         <div class="flex items-center space-x-2 cursor-pointer" @click="goToHome">
              <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-10 w-auto">
         </div>
@@ -221,19 +221,19 @@ body {
   min-height: 100vh;
 }
 .app-footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   background-color: #333; /* Add your desired background color */
-  padding: 1rem;
+  padding: 0.5rem;
   text-align: center;
+  
 }
 
 @media (max-width: 768px) {
   .app-footer {
     padding: 0.5rem;
-    height: 40px;
+    /* height: 40px; */
   }
 }
 @media (max-width: 640px) {
@@ -241,6 +241,7 @@ body {
         padding-left: 5px; 
         padding-right: 5px;
         padding-bottom: 55px;
+        height: 80vh;
     }
     /* Ensure the wrapper inside configure UI is full width on mobile */
     .configure-project-ui .w-full.max-w-6xl.mx-auto {

@@ -1,5 +1,6 @@
 <!-- MapVisualization.vue  -->
 
+
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-xl shadow-inner">
         <div class="map-header bg-gray-700  sm:p-4 rounded-t-xl flex justify-between items-center">
@@ -7,16 +8,7 @@
         </div>
         <div id="map" class="map-view flex-grow" ref="mapDiv"></div> 
 
-        
-        
-        <!-- <div v-if="selectedAoiDetails && props.isMonitorMode" class="aoi-detail-panel absolute bottom-0 right-0 m-4 p-4 bg-gray-800 text-white rounded-xl w-64 shadow-2xl z-[10000]">
-            <h4 class="font-bold text-cyan-400 mb-2">AOI Details</h4>
-            <p><strong>Name:</strong> {{ selectedAoiDetails.name }}</p>
-            <p><strong>ID:</strong> {{ selectedAoiDetails.aoi_id }}</p>
-            <p><strong>Algorithms:</strong> {{ selectedAoiDetails.mappedAlgorithms.length }}</p>
-            <p v-if="selectedAoiDetails.geom_properties?.buffer > 0"><strong>Buffer:</strong> {{ selectedAoiDetails.geom_properties.buffer }}m</p>
-            <button @click="selectedAoiDetails = null" class="mt-3 text-red-400 text-sm hover:text-red-500">Close</button>
-        </div> -->
+
     </div>
 </template>
 
@@ -28,7 +20,6 @@ import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet.gridlayer.googlemutant'; // Keep this for satellite view
 
-// REMOVED: import type { GeoJsonPolygon } from '@/classes/AreaOfInterestDraft';
 
 const props = defineProps({
     // AOIs to load when viewing an existing project (Create/Update or Monitor)
@@ -104,7 +95,6 @@ const setupDrawingControls = () => {
     const drawControl = new (L.Control).Draw({
         edit: {
             featureGroup: drawnItems.value,
-            // Disable editing/deleting of previous AOIs in the context of creating a new one
             edit: false, 
             remove: false
         },
@@ -120,27 +110,8 @@ const setupDrawingControls = () => {
     
     // Handle Drawing Events
     map.value.on((L.Draw).Event.DRAWSTART, (e) => {
-        // CRITICAL FIX: DO NOT clear all previously drawn items when drawing starts.
-        // The drawnItems FeatureGroup will contain *only* the geometry being drawn 
-        // by the Leaflet Draw plugin. The *saved* AOIs are on a separate GeoJSON layer 
-        // managed by the watch logic below. 
-        
-        // However, the Leaflet.Draw controls typically place the newly drawn layer 
-        // onto the main map layer set, which can interfere. We need to clear only the
-        // temporary drawing if another drawing is started.
-        
-        // Instead of clearing ALL, we should let the existing AOI layers remain.
-        // We will remove the newly drawn, unsaved feature in the parent when it is saved.
-        
-        // For simplicity and to use the existing 'drawnItems' management:
-        // We ensure the base drawnItems layer is clean BEFORE a new shape is finalized.
-        // This line is often necessary for Leaflet.Draw's internal state:
-        // drawnItems.value.clearLayers();  // <-- Keep this if the draw library forces it
-
     });
     
-
-     
 
 
     map.value.on((L.Draw).Event.CREATED, (e) => {
@@ -171,10 +142,8 @@ const setupDrawingControls = () => {
         // const buffer = requiresBufferInput.value ? bufferDistance.value || 0 : 0;
         
         const aoiData = {
-            // CRITICAL FIX: Ensure GeoJSON object is cast correctly
             geometry: geoJsonFeature.geometry, 
             geometryType: geometryType,
-            // buffer: buffer
         };
 
         emit('aoi-drawn', aoiData);
@@ -279,14 +248,7 @@ watch(() => props.aoisToDisplay, (newAois) => {
     }
 }, { deep: true });
 
-// Watch for changes in aoisToDisplay prop when used in Update/Monitor mode
-// watch(() => props.aoisToDisplay, (newAois) => {
-//     if (map.value && newAois && newAois.length > 0) {
-//         // Clear old layers before loading new ones
-//         drawnItems.value.clearLayers(); 
-//         loadExistingAOIs(newAois);
-//     }
-// }, { deep: true });
+
 
 </script>
 

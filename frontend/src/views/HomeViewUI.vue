@@ -51,10 +51,8 @@ const handleLogout = () => {
     <div id="home-view" class="main-container  flex items-center justify-center"
         style="background-color: var(--bg-color);">
         <div class="w-full max-w-2xl mx-auto p-4 rounded-2xl app-card text-center">
-            <!-- <h1 class="text-5xl font-extrabold mb-2 tracking-tight" style="color: var(--text-color);">Welcome {{ session.username || 'Admin' }}</h1>
-        <p class="text-lg mb-10" style="color: var(--accent-color);">Geospatial Area Monitoring with Unified Data Analytics</p> -->
-
-            <div class="flex justify-center space-x-4 mb-12 text-sm">
+            
+            <div class="flex justify-center space-x-4 mb-8 text-sm">
                 <div class="px-4 py-2 app-card-item rounded-xl">
                     <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
                     <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
@@ -92,7 +90,6 @@ const handleLogout = () => {
                             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Manage Projects</h2>
-                    <!-- <p class="text-sm" style="color: var(--text-muted);">View, filter, edit details, and modify users for existing AOIs.</p> -->
                 </div>
 
                 <div @click="handleMonitorProject"
@@ -105,7 +102,6 @@ const handleLogout = () => {
                         <circle cx="12" cy="12" r="3" />
                     </svg>
                     <h2 class="text-xl font-bold mb-1" style="color: var(--text-color);">Monitor Projects</h2>
-                    <!-- <p class="text-sm" style="color: var(--text-muted);">Real-time geospatial visualization and alert analysis.</p> -->
                 </div>
 
             </div>
@@ -119,7 +115,6 @@ const handleLogout = () => {
 /* Custom styles for an extra visual lift and to ensure pointer styling */
 .action-card {
     cursor: pointer;
-    /* This combines the cursor style with the group class for Tailwind hover effects */
 }
 
 .main-container {
@@ -157,13 +152,11 @@ const handleLogout = () => {
 #home-view {
     background-color: #030712; /* A deeper, darker background (gray-950) for contrast */
 }
-
 /* Ensure the focus state is clear for accessibility (can be adjusted with Tailwind focus classes) */
 .action-card:focus-within {
-    outline: 2px solid #10b981; /* Example focus ring (emerald-500) */
+    outline: 2px solid #10b981; 
     outline-offset: 4px;
 }
-
 .home-view { text-align: center; padding: 50px; }
 .action-buttons {
   display: flex;

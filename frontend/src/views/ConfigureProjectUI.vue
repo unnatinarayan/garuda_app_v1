@@ -22,7 +22,6 @@ const projectStore = useProjectStore();
 const { projectForm, projectName, description } = storeToRefs(projectStore);
 
 const isDataLoading = ref(false);
-// Removed isMenuMode. The component is ALWAYS in form mode.
 
 // Computed properties rely on the store's state for reactivity
 const currentStep = computed(() => projectStore.currentStep);
@@ -93,7 +92,7 @@ const isStepVisited = (step) => step < currentStep.value;
 
 <template>
     <div v-if="isDataLoading" class="loading-message">Loading existing project data...</div>
-    <div v-else class="configure-project-ui bg-gray-900 text-white">
+    <div v-else class="configure-project-ui bg-gray-900  text-white ">
 
         <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[10000]">
             <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
@@ -133,9 +132,6 @@ const isStepVisited = (step) => step < currentStep.value;
                     {{ isUpdateMode ? 'FINAL UPDATE' : 'FINAL SUBMIT' }}
                 </button>
             </div>
-        </div>
-
-        <div class="w-full max-w-6xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-6 relative pt-28 pb-10">
 
             <div class="flex justify-between items-center relative mb-2">
                 <template v-for="step in 4" :key="step">
@@ -167,8 +163,12 @@ const isStepVisited = (step) => step < currentStep.value;
                        ></div>
                 </template>
             </div>
+        </div>
 
-            <div class="step-content border border-gray-700  rounded-xl max-h-[70vh] overflow-y-auto">
+        <div class="w-full h-[70vh] max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
+
+
+            <div class="step-content border border-gray-700  rounded-xl max-h-[70vh] pt-4 overflow-y-auto">
                 <Step1BasicInfo v-if="currentStep === 1" :project-data="projectForm" />
                 <Step2DefineAOI v-if="currentStep === 2" :project-data="projectForm" />
                 <Step3AlgoMapping v-if="currentStep === 3" :project-data="projectForm" />
@@ -183,11 +183,41 @@ const isStepVisited = (step) => step < currentStep.value;
 
 
 <style scoped>
-.configure-project-ui { min-height: 80vh; display: flex; align-items: flex-start; justify-content: center; padding-top: 50px; }
-.step-content { min-height: 350px; }
-.navigation-controls { display: flex; justify-content: space-between; gap: 10px; }
-.btn-primary, .btn-secondary, .btn-submit { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; }
-.loading-message { text-align: center; padding: 50px; font-size: 1.2em; color: #FF9800; }
+.configure-project-ui {
+    min-height: 80vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 50px;
+}
+
+.step-content {
+    min-height: 350px;
+}
+
+.navigation-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-submit {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2em;
+    color: #FF9800;
+}
 </style>
 
 
