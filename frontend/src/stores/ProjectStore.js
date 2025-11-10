@@ -31,25 +31,43 @@ function mapBackendToForm(data) {
     // Step 2 & 3 Mapping (AOIs and Mappings)
     let aoiCounter = 1;
     form.aoiDrafts = data.aois.map((aoi) => {
+
+        const geometryType = aoi.geomGeoJson?.type ||
+            aoi.geom_properties?.originalType ||
+            'Polygon';
+
+        // Extract buffer distance
+        const bufferDistance = aoi.geom_properties?.buffer || null;
+
         // Instantiate the AreaOfInterestDraft class
         const aoiDraft = new AreaOfInterestDraft(
             aoi.name,
             aoi.geomGeoJson,
             aoiCounter++,
-            aoi.geom_properties?.originalType || 'Polygon', // Preserve original geometry type
-            aoi.geom_properties?.buffer || null
+            geometryType,
+            bufferDistance
+            // aoi.geom_properties?.originalType || 'Polygon', // Preserve original geometry type
+            // aoi.geom_properties?.buffer || null
         );
         aoiDraft.aoiId = aoi.aoi_id;
-        aoiDraft.geomProperties = aoi.geom_properties || {};
+
+        aoiDraft.geomProperties = {
+            ...aoi.geom_properties,
+            originalType: geometryType,
+            buffer: bufferDistance
+        };
+        // aoiDraft.geomProperties = aoi.geom_properties || {};
 
         // Map algorithms
-        aoi.mappedAlgorithms.forEach((algo) => {
-            aoiDraft.mapAlgorithm(
-                algo.algo_id, // <-- Use the STRING algo_id for mapping
-                algo.algo_id, // Use algo_id string as the display name
-                algo.config_args
-            );
-        });
+        if (aoi.mappedAlgorithms && aoi.mappedAlgorithms.length > 0) {
+            aoi.mappedAlgorithms.forEach((algo) => {
+                aoiDraft.mapAlgorithm(
+                    algo.algo_id,
+                    algo.algo_id,
+                    algo.config_args || {}
+                );
+            });
+        }
         return aoiDraft;
     });
 
@@ -137,10 +155,17 @@ export const useProjectStore = defineStore('project', () => {
         }
     }
 
+    // Use this function in your loadProjectForUpdate action:
     async function loadProjectForUpdate(projectId) {
         try {
             const response = await api.getProjectDetails(projectId);
+            console.log('[ProjectStore] Loaded project data:', response);
+            console.log('[ProjectStore] Number of AOIs:', response.aois?.length);
+
             projectForm.value = mapBackendToForm(response);
+
+            console.log('[ProjectStore] Mapped AOI drafts:', projectForm.value.aoiDrafts.length);
+            console.log('[ProjectStore] First AOI geometry:', projectForm.value.aoiDrafts[0]?.geomGeoJson);
         } catch (error) {
             console.error(`Error loading project ${projectId}:`, error);
             throw new Error('Failed to load project data for editing.');

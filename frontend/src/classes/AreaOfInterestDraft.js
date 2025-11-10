@@ -5,6 +5,7 @@ export class AreaOfInterestDraft {
     name;
     aoiId;
     geometry;
+    geomGeoJson; 
     mappedAlgorithms = [];
     bufferDistance = null; // NEW: Holds buffer distance in meters
     geometryType = 'Polygon'; // NEW: To know if buffer is needed
@@ -22,8 +23,14 @@ export class AreaOfInterestDraft {
         this.name = name;
         this.aoiId = `aoi-${clientAoiId}`;
         this.geometry = geometry;
+        this.geomGeoJson = geometry;
         this.geometryType = geometryType;
         this.bufferDistance = bufferDistance;
+
+        this.geomProperties = {
+            originalType: geometryType,
+            buffer: bufferDistance
+        };
     }
 
 

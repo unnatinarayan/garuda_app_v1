@@ -1,89 +1,119 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Highcharts from 'highcharts';
 
 const props = defineProps({
     isVisible: Boolean,
-    projectId: [Number, String], // Project ID for fetching
-    allAois: { type: Array, default: () => [] }, // All AOIs in the project
-    projectAlerts: { type: Array, default: () => [] }, // Live alert data from parent
+    projectId: [Number, String],
+    allAois: { type: Array, default: () => [] },
+    projectAlerts: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close', 'refetch-alerts']);
 
 // --- STATE ---
 const selectedAoiIds = ref([]);
-const selectedAlgoIds = ref([]); 
+const selectedAlgoIds = ref([]);
 const dateFilter = ref({ 
     from: null, 
     to: null 
 });
 
-const ALGO_COLORS = ['#f87171', '#34d399', '#60a5fa', '#facc15', '#a78bfa', '#fb923c'];
+const ALGO_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 const algoColorMap = ref({});
 
-const chartElement = ref(null); // Reference to the div element
-let chartInstance = null; // Highcharts object reference
+const chartElement = ref(null);
+let chartInstance = null;
 
-const showAlertModal = ref(false); 
-const currentAlertMessage = ref('');
-
+const showAlertModal = ref(false);
+const currentAlertDetails = ref(null);
+const isLoadingChart = ref(false);
 
 // --- COMPUTED DATA ---
 
+// Get unique algorithms across all AOIs with color assignment
 const uniqueAlgorithms = computed(() => {
     const algos = new Map();
     let colorIndex = 0;
+    
     props.allAois.forEach(aoi => {
-        aoi.mappedAlgorithms.forEach(algo => {
-            if (!algos.has(algo.algo_id)) {
-                const color = ALGO_COLORS[colorIndex % ALGO_COLORS.length];
-                algos.set(algo.algo_id, { 
-                    algo_id: algo.algo_id, 
-                    color: color
-                });
-                algoColorMap.value[algo.algo_id] = color;
-                colorIndex++; 
-            }
-        });
+        if (aoi.mappedAlgorithms && Array.isArray(aoi.mappedAlgorithms)) {
+            aoi.mappedAlgorithms.forEach(algo => {
+                if (!algos.has(algo.algo_id)) {
+                    const color = ALGO_COLORS[colorIndex % ALGO_COLORS.length];
+                    algos.set(algo.algo_id, { 
+                        algo_id: algo.algo_id,
+                        description: algo.description || algo.algo_id,
+                        color: color
+                    });
+                    algoColorMap.value[algo.algo_id] = color;
+                    colorIndex++;
+                }
+            });
+        }
     });
+    
     return Array.from(algos.values());
 });
 
-
-const chartSeriesData = computed(() => {
-    const dataMap = new Map();
-
-    // 1. Initialize series for all SELECTED combinations
+// Get algorithms available for currently selected AOIs
+const availableAlgorithms = computed(() => {
+    if (selectedAoiIds.value.length === 0) return uniqueAlgorithms.value;
+    
+    const availableAlgos = new Set();
     const selectedAois = props.allAois.filter(a => selectedAoiIds.value.includes(a.aoi_id));
-    const selectedAlgos = uniqueAlgorithms.value.filter(a => selectedAlgoIds.value.includes(a.algo_id));
+    
+    selectedAois.forEach(aoi => {
+        if (aoi.mappedAlgorithms && Array.isArray(aoi.mappedAlgorithms)) {
+            aoi.mappedAlgorithms.forEach(algo => {
+                availableAlgos.add(algo.algo_id);
+            });
+        }
+    });
+    
+    return uniqueAlgorithms.value.filter(algo => availableAlgos.has(algo.algo_id));
+});
 
-    if (selectedAois.length === 0 || selectedAlgos.length === 0) {
+// Process alerts into series data for Highcharts
+const chartSeriesData = computed(() => {
+    if (!props.projectAlerts || props.projectAlerts.length === 0) {
         return [];
     }
 
+    if (selectedAoiIds.value.length === 0 || selectedAlgoIds.value.length === 0) {
+        return [];
+    }
+
+    const dataMap = new Map();
+    
+    // Initialize series for each AOI-Algorithm combination
+    const selectedAois = props.allAois.filter(a => selectedAoiIds.value.includes(a.aoi_id));
+    const selectedAlgos = availableAlgorithms.value.filter(a => selectedAlgoIds.value.includes(a.algo_id));
+    
     selectedAois.forEach(aoi => {
         selectedAlgos.forEach(algo => {
             const seriesId = `${aoi.aoi_id}_${algo.algo_id}`;
             dataMap.set(seriesId, {
                 id: seriesId,
                 name: `${aoi.name} / ${algo.algo_id}`,
-                data: [], 
+                data: [],
                 color: algo.color,
                 aoiId: aoi.aoi_id,
                 algoId: algo.algo_id,
-                type: 'line', 
+                type: 'line',
                 step: 'left',
+                lineWidth: 2,
             });
         });
     });
-
-    // 2. Filter Alerts based on user selections
+    
+    // Filter and process alerts
     const filteredAlerts = props.projectAlerts.filter(alert => 
-        selectedAoiIds.value.includes(alert.aoiId) && selectedAlgoIds.value.includes(alert.algoId)
+        selectedAoiIds.value.includes(alert.aoiId) && 
+        selectedAlgoIds.value.includes(alert.algoId)
     );
     
-    // 3. Populate series with alert pulses
+    // Populate series with alert data
     filteredAlerts.forEach(alert => {
         const seriesId = `${alert.aoiId}_${alert.algoId}`;
         const series = dataMap.get(seriesId);
@@ -91,43 +121,168 @@ const chartSeriesData = computed(() => {
         if (series) {
             const timestamp = new Date(alert.timestamp).getTime();
             
-            // Pulse Generation Logic (T-1, 0) -> (T, 1) -> (T+1, 0)
-            
-            series.data.push([timestamp - 1, 0]); 
-
+            // Create pulse: (T-1ms, 0) -> (T, 1) -> (T+1ms, 0)
+            series.data.push([timestamp - 1, 0]);
             series.data.push({
-                 x: timestamp, 
-                 y: 1, 
-                 alertDetails: alert, 
-            }); 
-
+                x: timestamp,
+                y: 1,
+                alertDetails: alert,
+                marker: { enabled: true, radius: 4, symbol: 'circle' }
+            });
             series.data.push([timestamp + 1, 0]);
         }
     });
-
-    // 4. Finalize and Sort Series
-    return Array.from(dataMap.values()).map(series => {
-        series.data.sort((a, b) => (typeof a === 'object' ? a.x : a[0]) - (typeof b === 'object' ? b.x : b[0]));
+    
+    // Finalize series
+    const allSeries = Array.from(dataMap.values()).map(series => {
+        // Sort data points
+        series.data.sort((a, b) => {
+            const aTime = typeof a === 'object' ? a.x : a[0];
+            const bTime = typeof b === 'object' ? b.x : b[0];
+            return aTime - bTime;
+        });
         
-        const now = Date.now();
-        const earliestTime = dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : now;
-        const latestTime = dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : now;
-        
-        // Ensure the graph starts and ends at 0
-        series.data.unshift([earliestTime - 10, 0]);
-        series.data.push([latestTime + 10, 0]);
+        // Add baseline points at start and end
+        if (series.data.length > 0) {
+            const firstTime = typeof series.data[0] === 'object' ? series.data[0].x : series.data[0][0];
+            const lastTime = typeof series.data[series.data.length - 1] === 'object' 
+                ? series.data[series.data.length - 1].x 
+                : series.data[series.data.length - 1][0];
+            
+            series.data.unshift([firstTime - 1000, 0]);
+            series.data.push([lastTime + 1000, 0]);
+        }
         
         return series;
     });
+
+    
+    return allSeries.filter(s => s.data.length > 2); // Only return series with actual data
 });
+
+// Highcharts configuration
+const chartOptions = computed(() => {
+    const minTime = dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : undefined;
+    const maxTime = dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : undefined;
+    
+    return {
+        chart: {
+            type: 'line',
+            zoomType: 'x',
+            backgroundColor: '#1f2937',
+            height: '',
+            animation: true,
+        },
+        title: {
+            text: null,
+        },
+        credits: {
+            enabled: false
+        },
+        xAxis: {
+            type: 'datetime',
+            title: { 
+                text: 'Timeline', 
+                style: { color: '#9ca3af', fontWeight: 'bold' } 
+            },
+            labels: { 
+                style: { color: '#d1d5db' },
+                format: '{value:%e %b %H:%M}'
+            },
+            gridLineColor: '#374151',
+            lineColor: '#4b5563',
+            min: minTime,
+            max: maxTime,
+        },
+        yAxis: {
+            title: { 
+                text: 'Alert Status', 
+                style: { color: '#9ca3af', fontWeight: 'bold' } 
+            },
+            labels: {
+                style: { color: '#d1d5db' },
+                formatter: function() {
+                    return this.value === 1 ? 'Alert' : 'None';
+                }
+            },
+            min: 0,
+            max: 1.5,
+            tickPositions: [0, 1],
+            gridLineColor: '#374151',
+        },
+        tooltip: {
+            backgroundColor: '#111827',
+            borderColor: '#4b5563',
+            style: { color: '#f3f4f6' },
+            useHTML: true,
+            formatter: function() {
+                const alertData = this.point.options.alertDetails;
+                
+                if (this.y === 1 && alertData) {
+                    const time = Highcharts.dateFormat('%A, %b %e, %Y, %H:%M:%S', this.x);
+                    return `
+                        <div style="padding: 8px;">
+                            <div style="font-size: 11px; color: #9ca3af;">${time}</div>
+                            <div style="margin-top: 4px;">
+                                <span style="color:${this.point.color}">●</span>
+                                <strong>${this.series.name}</strong>
+                            </div>
+                            <div style="margin-top: 4px; font-size: 11px; color: #fbbf24;">
+                                🔔 Alert Detected
+                            </div>
+                            <div style="margin-top: 2px; font-size: 10px; color: #9ca3af;">
+                                Click for details
+                            </div>
+                        </div>
+                    `;
+                }
+                return `<div style="padding: 8px;"><strong>${this.series.name}</strong>: No Alert</div>`;
+            }
+        },
+        legend: {
+            enabled: false
+        },
+        plotOptions: {
+            series: {
+                step: 'left',
+                lineWidth: 2,
+                marker: { 
+                    enabled: false,
+                    states: {
+                        hover: { enabled: true, radius: 5 }
+                    }
+                },
+                states: {
+                    hover: { lineWidthPlus: 1 }
+                },
+                point: {
+                    events: {
+                        click: function() {
+                            if (this.y === 1 && this.options.alertDetails) {
+                                handlePointClick(this.options.alertDetails);
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        series: chartSeriesData.value
+    };
+});
+
 
 
 // --- ACTIONS ---
 
 const applyFilters = () => {
-    // This triggers a refetch of raw alerts from the backend based on date range
-    const from = dateFilter.value.from ? new Date(dateFilter.value.from).toISOString() : null;
-    const to = dateFilter.value.to ? new Date(dateFilter.value.to).toISOString() : null;
+    if (!dateFilter.value.from || !dateFilter.value.to) {
+        
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    const from = new Date(dateFilter.value.from).toISOString();
+    const to = new Date(dateFilter.value.to).toISOString();
     emit('refetch-alerts', props.projectId, from, to);
 };
 
@@ -138,7 +293,11 @@ const toggleAoiSelection = (aoiId) => {
     } else {
         selectedAoiIds.value.push(aoiId);
     }
-    // Plotting will automatically update via chartOptions watch
+    
+    // Auto-adjust algorithm selection based on available algorithms
+    selectedAlgoIds.value = selectedAlgoIds.value.filter(algoId => 
+        availableAlgorithms.value.some(a => a.algo_id === algoId)
+    );
 };
 
 const toggleAlgoSelection = (algoId) => {
@@ -148,242 +307,298 @@ const toggleAlgoSelection = (algoId) => {
     } else {
         selectedAlgoIds.value.push(algoId);
     }
-    // Plotting will automatically update via chartOptions watch
 };
 
-const handlePointClick = (event) => {
-    const alertData = event.point.options.alertDetails; 
+const handlePointClick = (alertDetails) => {
+    currentAlertDetails.value = alertDetails;
+    showAlertModal.value = true;
+};
+
+const selectAllAois = () => {
+    selectedAoiIds.value = props.allAois.map(a => a.aoi_id);
+};
+
+const deselectAllAois = () => {
+    selectedAoiIds.value = [];
+};
+
+const selectAllAlgos = () => {
+    selectedAlgoIds.value = availableAlgorithms.value.map(a => a.algo_id);
+};
+
+const deselectAllAlgos = () => {
+    selectedAlgoIds.value = [];
+};
+
+// Chart management
+const updateChart = () => {
+    if (!props.isVisible || !chartElement.value) return;
     
-    if (event.point.y === 1 && alertData) {
-        currentAlertMessage.value = JSON.stringify(alertData.message, null, 2);
-        showAlertModal.value = true;
-    } else {
-        currentAlertMessage.value = '';
-        showAlertModal.value = false;
+    isLoadingChart.value = true;
+    
+    setTimeout(() => {
+        if (chartSeriesData.value.length > 0) {
+            if (chartInstance) {
+                chartInstance.update(chartOptions.value, true, true);
+            } else {
+                chartInstance = Highcharts.chart(chartElement.value, chartOptions.value);
+            }
+        } else if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+        isLoadingChart.value = false;
+    }, 100);
+};
+
+const destroyChart = () => {
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
     }
 };
 
-// --- Highcharts Configuration ---
-const chartOptions = computed(() => ({
-    chart: {
-        type: 'line',
-        zoomType: 'x',
-        backgroundColor: 'transparent',
-        height: '100%',
-        marginTop: 20,
-        showAxes: true 
-    },
-    title: {
-        text: null, 
-    },
-    xAxis: {
-        type: 'datetime',
-        title: { text: 'Time', style: { color: '#ccc' } },
-        dateTimeLabelFormats: {
-            millisecond: '%H:%M:%S.%L', 
-            second: '%H:%M:%S',
-            minute: '%H:%M',
-            hour: '%H:%M',
-            day: '%e. %b',
-        },
-        labels: { style: { color: '#ccc' } },
-        min: dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : undefined,
-        max: dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : undefined
-    },
-    yAxis: {
-        title: { text: 'Alert Status (0=None, 1=Alert)', style: { color: '#ccc' } },
-        labels: { 
-            style: { color: '#ccc' },
-            formatter: function() {
-                if (this.value === 1) return 'Alert';
-                if (this.value === 0) return 'None';
-                return '';
-            }
-        },
-        // Max set to 2 to provide buffer space above the '1' line
-        min: 0,
-        max: 2, 
-        tickPositions: [0, 1] 
-    },
-    tooltip: {
-        xDateFormat: '%A, %b %e, %Y, %H:%M:%S', 
-        formatter: function() {
-            const alertData = this.point.options.alertDetails;
-            let tooltipHTML = `<span style="font-size: 10px">${Highcharts.dateFormat('%A, %b %e, %Y, %H:%M:%S', this.x)}</span><br/>`;
-            
-            if (this.y === 1 && alertData) {
-                tooltipHTML += `<span style="color:${this.point.color}">\u25CF</span> <b>${this.series.name}</b>: Alert Received<br/>`;
-                tooltipHTML += `<span style="font-size: 10px; color:#aaa;">Type: ${alertData.message.type || 'N/A'}</span>`;
-            } else {
-                tooltipHTML += `<b>${this.series.name}</b>: No Alert`;
-            }
-            return tooltipHTML;
-        }
-    },
-    legend: {
-        enabled: false 
-    },
-    plotOptions: {
-        series: {
-            step: 'left', 
-            lineWidth: 2,
-            marker: { enabled: false },
-            point: {
-                events: {
-                    click: handlePointClick
-                }
-            },
-            events: {
-                legendItemClick: function() { return false; }
-            }
-        },
-    },
-    
-    series: chartSeriesData.value
-}));
-
-
-// --- MOUNTING AND WATCHERS ---
+// --- LIFECYCLE ---
 
 onMounted(() => {
+    // Set default date range (last 7 days)
     const now = new Date();
-    // Default range set to last 24 hours
-    const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-    const formatDate = (date) => date.toISOString().split('T')[0];
-
-    dateFilter.value.from = formatDate(oneDayAgo);
-    dateFilter.value.to = formatDate(now);
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
     
-    // Select all AOIs and all Algos by default immediately
-    watch(props.allAois, (newAois) => {
-        if (newAois.length > 0) {
-            selectedAoiIds.value = newAois.map(a => a.aoi_id);
-            selectedAlgoIds.value = uniqueAlgorithms.value.map(a => a.algo_id);
-        }
-    }, { immediate: true });
-
-    // Handle initial selection for algorithms
-    watch(uniqueAlgorithms, (newAlgos) => {
-        if (newAlgos.length > 0 && selectedAlgoIds.value.length === 0) {
-            selectedAlgoIds.value = newAlgos.map(a => a.algo_id);
-        }
-    }, { immediate: true });
+    dateFilter.value.from = sevenDaysAgo.toISOString().split('T')[0];
+    dateFilter.value.to = now.toISOString().split('T')[0];
+    
+    // Initialize selections
+    if (props.allAois.length > 0) {
+        selectedAoiIds.value = props.allAois.map(a => a.aoi_id);
+    }
+    
+    if (uniqueAlgorithms.value.length > 0) {
+        selectedAlgoIds.value = uniqueAlgorithms.value.map(a => a.algo_id);
+    }
 });
 
+onBeforeUnmount(() => {
+    destroyChart();
+});
 
-// CRITICAL FIX: Manually manage Highcharts instance for reliable re-plotting/destruction
-watch(chartOptions, (newOptions) => {
-    // 1. Guard check
-    if (!props.isVisible || !chartElement.value) return;
-
-    // 2. Update/Create logic
-    if (chartSeriesData.value.length > 0) {
-        if (chartInstance) {
-            // Update existing chart (re-plots instantly when data/options change)
-            chartInstance.update(newOptions, true);
-        } else {
-            // Create new chart
-            chartInstance = Highcharts.chart(chartElement.value, newOptions);
-        }
-    } else if (chartInstance) {
-        // 3. Destroy logic (if selections lead to no data)
-        chartInstance.destroy();
-        chartInstance = null;
-    }
-}, { deep: true }); 
-
-
-// Destroy chart when panel closes to free up memory
+// Watch for changes
 watch(() => props.isVisible, (newVal) => {
-    if (!newVal && chartInstance) {
-        chartInstance.destroy();
-        chartInstance = null;
+    if (!newVal) {
+        destroyChart();
+    } else {
+        updateChart();
     }
 });
+
+watch([chartSeriesData, () => props.isVisible], () => {
+    if (props.isVisible) {
+        updateChart();
+    }
+}, { deep: true });
+
+watch(() => props.allAois, (newAois) => {
+    if (newAois.length > 0 && selectedAoiIds.value.length === 0) {
+        selectedAoiIds.value = newAois.map(a => a.aoi_id);
+    }
+}, { immediate: true });
+
+watch(uniqueAlgorithms, (newAlgos) => {
+    if (newAlgos.length > 0 && selectedAlgoIds.value.length === 0) {
+        selectedAlgoIds.value = newAlgos.map(a => a.algo_id);
+    }
+}, { immediate: true });
 </script>
-
-
 
 <template>
     <div v-if="isVisible" 
-         class="fixed bottom-0 left-0 right-0 bg-gray-900 shadow-2xl border-t-4 border-cyan-500 transition-all duration-300 transform z-[10000]"
-         :class="{'translate-y-0': isVisible, 'translate-y-full': !isVisible}"
-         style="height: 50vh; min-height: 300px;"
-    >
-        <button @click="$emit('close')" class="absolute p-0 top-1 right-4 text-red-400 hover:text-red-300 text-2xl font-bold z-20" title="Close Panel">&times;</button>
-
+         class="fixed overflow-y-auto bottom-0 left-0 right-0 bg-gray-800 shadow-2xl border-t-4 border-cyan-500 transition-all duration-300 z-[10000]"
+         style="height: 55vh; min-height: 400px;">
         
-        <!-- Main Content Wrapper: Responsive Padding and Scroll -->
-        <div class="flex flex-col h-full p-2 overflow-y-auto">
+        <!-- Close Button -->
+        <button @click="$emit('close')" 
+                class="absolute top-0 right-0 text-red-400 hover:text-red-300 text-3xl font-bold z-20 w-8 h-8 flex items-center justify-center"
+                title="Close Panel">
+            &times;
+        </button>
+
+        <!-- Main Content -->
+        <div class="flex flex-col  p-3 overflow-y-auto">
             
-            <!-- Controls (Top: AOI Selection & Date Filter) -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 space-y-2 sm:space-y-0 sm:space-x-4">
-                
-                <!-- AOI Selection (Top-Left) -->
-                <div class="flex-grow w-full sm:w-1/2">
-                    <label class="block text-gray-400 text-xs mb-1">Select AOIs:</label>
-                    <div class="flex flex-wrap gap-2 max-h-12 overflow-y-auto p-1 bg-gray-800 rounded-lg">
-                        <label v-for="aoi in allAois" :key="aoi.aoi_id" 
-                               :for="`aoi-${aoi.aoi_id}`" class="flex items-center space-x-1 text-sm text-gray-300 cursor-pointer hover:text-white"
-                        >
+            <!-- Controls Section -->
+            <div class="flex-shrink-0 flex-column">
+                <div class="flex justify-between items-center">
+                        <label class="text-gray-300 text-sm font-semibold">Select AOIs:</label>
+                        
+                </div>
+                <div class="flex flex-wrap gap-1 overflow-y-auto">
+                        <label v-for="aoi in allAois" 
+                               :key="aoi.aoi_id"
+                               class="flex items-center space-x-1 text-sm text-gray-300 cursor-pointer hover:text-white px-2 py-1 rounded-full transition-colors">
                             <input type="checkbox" 
-                                   :id="`aoi-${aoi.aoi_id}`" :value="aoi.aoi_id" 
+                                   :value="aoi.aoi_id" 
                                    :checked="selectedAoiIds.includes(aoi.aoi_id)"
                                    @change="toggleAoiSelection(aoi.aoi_id)"
                                    class="rounded text-cyan-500 bg-gray-700 border-gray-600 focus:ring-cyan-500">
                             <span class="truncate">{{ aoi.name }}</span>
                         </label>
-                    </div>
                 </div>
+                
+                
 
-                <!-- Date Filter (Top-Right) -->
-                <div class="w-full sm:w-1/2 flex justify-end">
-                    <div class="flex space-x-2 text-sm">
-                        <input type="date" v-model="dateFilter.from" class="bg-gray-700 text-white p-1 rounded w-1/3 text-xs sm:text-sm">
-                        <input type="date" v-model="dateFilter.to" class="bg-gray-700 text-white p-1 rounded w-1/3 text-xs sm:text-sm">
-                        <button @click="applyFilters" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg w-1/3 text-xs sm:text-sm">Filter</button>
+                <!-- Date Filter Row -->
+                <div class=" flex flex-row-reverse rounded-lg right-0">
+                    <!-- <label class="text-gray-300 text-sm font-semibold mb-1 block">Date Range:</label> -->
+                    <div class="flex flex-row gap-1 items-center">
+                        <input type="date" 
+                               v-model="dateFilter.from" 
+                               class="bg-gray-600 text-white px-1 rounded text-sm">
+                        <span class="text-gray-400">to</span>
+                        <input type="date" 
+                               v-model="dateFilter.to" 
+                               class="bg-gray-600 text-white px-1 rounded text-sm">
+                        <button @click="applyFilters" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded-lg text-sm font-semibold">
+                            Apply
+                        </button>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Graph Plot Area (Middle: Takes all remaining vertical space) -->
-            <div class="flex-grow min-h-20 mb-2">
-                <div ref="chartElement" class="w-full h-full" v-if="chartSeriesData.length > 0">
-                </div>
-                <div v-else class="text-gray-400 p-4 text-center flex items-center justify-center h-full border border-gray-700 rounded-lg">
-                    <span>{{ props.projectAlerts.length === 0 ? 'No alerts for this project.' : 
-                             selectedAoiIds.length === 0 || selectedAlgoIds.length === 0 ? 'Select AOIs and Algorithms to plot.' : 
-                             'No alerts found for the selected combination and date range.' 
-                    }}</span>
                 </div>
             </div>
 
-            <!-- Algorithm Legend (Bottom: Horizontal flex row) -->
-            <div class="flex flex-wrap gap-x-4 gap-y-1 p-2 bg-gray-800 rounded-lg justify-start flex-row overflow-x-auto border border-gray-700">
-                <div v-for="algo in uniqueAlgorithms" :key="algo.algo_id" 
-                       :title="`Algorithm: ${algo.algo_id}`"
-                       class="flex items-center space-x-1 text-xs text-gray-300 cursor-pointer hover:text-white transition-colors"
-                >
-                     <input type="checkbox" 
-                           :id="`legend-algo-${algo.algo_id}`" :value="algo.algo_id" 
-                           :checked="selectedAlgoIds.includes(algo.algo_id)"
-                           @change="toggleAlgoSelection(algo.algo_id)"
-                           class="rounded text-cyan-500 bg-gray-700 border-gray-600 focus:ring-cyan-500">
-                     <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: algo.color }"></div>
-                     <span class="font-medium">{{ algo.algo_id }}</span>
+            <!-- Chart Area -->
+            <div class="flex-grow min-h-0  mb-3 bg-gray-900 rounded-lg p-2 relative">
+                <div v-if="isLoadingChart" 
+                     class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-10">
+                    <div class="text-cyan-400 text-lg">Loading chart...</div>
+                </div>
+                
+                <div ref="chartElement" 
+                     v-show="chartSeriesData.length > 0 && !isLoadingChart"
+                     class="w-full h-[30vh] max-h-2/3">
+                </div>
+                
+                <div v-if="!isLoadingChart && chartSeriesData.length === 0" 
+                     class="flex items-center justify-center text-gray-400 text-center">
+                    <div>
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                        <p class="text-lg font-semibold">No Data to Display</p>
+                        <p class="text-sm mt-2">
+                            {{ props.projectAlerts.length === 0 
+                                ? 'No alerts found for this project' 
+                                : 'Select AOIs and Algorithms to view alerts' }}
+                        </p>
+                    </div>
                 </div>
             </div>
-            
+
+            <!-- Algorithm Legend -->
+            <div class="flex-shrink-0 bg-gray-700 rounded-lg p-1">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-gray-300 text-sm font-semibold">Algorithms:</label>
+                    <div class="flex gap-2">
+                        <button @click="selectAllAlgos" 
+                                class="text-xs bg-cyan-600 hover:bg-cyan-700 text-white px-2 py-1 rounded">
+                            All
+                        </button>
+                        <button @click="deselectAllAlgos" 
+                                class="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded">
+                            None
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3 max-h-16 overflow-y-auto">
+                    <label v-for="algo in availableAlgorithms" 
+                           :key="algo.algo_id"
+                           class="flex items-center space-x-2 text-sm cursor-pointer transition-all"
+                           :class="selectedAlgoIds.includes(algo.algo_id) ? 'text-white' : 'text-gray-400'"
+                           :title="algo.description">
+                        <input type="checkbox" 
+                               :value="algo.algo_id" 
+                               :checked="selectedAlgoIds.includes(algo.algo_id)"
+                               @change="toggleAlgoSelection(algo.algo_id)"
+                               class="rounded text-cyan-500 bg-gray-700 border-gray-600 focus:ring-cyan-500">
+                        <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: algo.color }"></div>
+                        <span class="font-medium">{{ algo.algo_id }}</span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
     
-    <!-- Alert Message Modal -->
-    <div v-if="showAlertModal" class="fixed inset-0 bg-black bg-opacity-70 z-[30000] flex justify-center items-center p-4">
-        <div class="bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-lg relative border-2 border-red-500">
-            <button @click="showAlertModal = false" class="absolute top-2 right-4 text-red-400 hover:text-red-300 text-2xl font-bold">&times;</button>
-            <h5 class="text-xl text-white font-bold mb-3 border-b border-gray-700 pb-2">Alert Details</h5>
-            <pre class="bg-gray-800 p-3 rounded-lg text-sm text-yellow-300 whitespace-pre-wrap max-h-80 overflow-y-auto">{{ currentAlertMessage }}</pre>
-            <button @click="showAlertModal = false" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">Close</button>
+    <!-- Alert Details Modal -->
+    <div v-if="showAlertModal && currentAlertDetails" 
+         class="fixed inset-0 bg-black bg-opacity-70 z-[30000] flex justify-center items-center p-4"
+         @click.self="showAlertModal = false">
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl relative border-2 border-cyan-500 max-h-[80vh] overflow-y-auto">
+            <button @click="showAlertModal = false" 
+                    class="absolute top-3 right-3 text-red-400 hover:text-red-300 text-3xl font-bold">
+                &times;
+            </button>
+            
+            <h3 class="text-2xl text-white font-bold mb-4 border-b border-gray-700 pb-3">
+                🔔 Alert Details
+            </h3>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-gray-400 text-sm">Project</p>
+                            <p class="text-white font-semibold">{{ currentAlertDetails.project_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">AOI</p>
+                            <p class="text-white font-semibold">{{ currentAlertDetails.aoi_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Algorithm</p>
+                            <p class="text-cyan-400 font-semibold">{{ currentAlertDetails.algoId }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Timestamp</p>
+                            <p class="text-white font-semibold">
+                                {{ new Date(currentAlertDetails.timestamp).toLocaleString() }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded-lg">
+                    <p class="text-gray-400 text-sm mb-2">Alert Message:</p>
+                    <pre class="bg-gray-800 p-3 rounded text-sm text-yellow-300 whitespace-pre-wrap overflow-x-auto">{{ JSON.stringify(currentAlertDetails.message, null, 2) }}</pre>
+                </div>
+            </div>
+            
+            <button @click="showAlertModal = false" 
+                    class="mt-6 w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-lg font-semibold">
+                Close
+            </button>
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Custom scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+</style>

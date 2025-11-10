@@ -9,7 +9,7 @@ import { storeToRefs } from 'pinia';
 import "tailwindcss";
 
 const props = defineProps({
-   id: String,
+    id: String,
 });
 
 // Component Imports
@@ -43,39 +43,39 @@ const stepNames = computed(() => {
 const projectIdParam = props.id ? parseInt(props.id) : (route.params.id ? parseInt(route.params.id) : null);
 
 onMounted(async () => {
-   if (projectIdParam) {
-       // If in update mode, load data and jump directly to Step 1
-       isDataLoading.value = true;
-       try {
-           await projectStore.loadProjectForUpdate(projectIdParam);
-           projectStore.projectForm.currentStep = 1; // Always start update flow at step 1
-       } catch (error) {
-           alert('Error loading project: ' + (error).message);
-           router.push('/');
-       } finally {
-           isDataLoading.value = false;
-       }
-   } else {
-       // For new projects, start clean at Step 1
-       projectStore.initNewProjectForm();
-       projectStore.projectForm.currentStep = 1; 
-   }
+    if (projectIdParam) {
+        // If in update mode, load data and jump directly to Step 1
+        isDataLoading.value = true;
+        try {
+            await projectStore.loadProjectForUpdate(projectIdParam);
+            projectStore.projectForm.currentStep = 1; // Always start update flow at step 1
+        } catch (error) {
+            alert('Error loading project: ' + (error).message);
+            router.push('/');
+        } finally {
+            isDataLoading.value = false;
+        }
+    } else {
+        // For new projects, start clean at Step 1
+        projectStore.initNewProjectForm();
+        projectStore.projectForm.currentStep = 1;
+    }
 });
 
 // Method to handle final submission (remains the same)
 const handleSubmit = async () => {
-   if (!projectName.value || projectForm.value.aoiDrafts.length === 0) {
-       alert('Please complete Step 1 (Project Name) and Step 2 (Draw at least one AOI) before final submission.');
-       return;
-   }
-   try {
-       await projectStore.submitProject();
-       alert('Project successfully ' + (isUpdateMode.value ? 'updated.' : 'created!'));
-       router.push('/');
-   } catch (error) {
-       console.error("Submission Error:", error);
-       alert('Error submitting project. Check the console for API error details.');
-   }
+    if (!projectName.value || projectForm.value.aoiDrafts.length === 0) {
+        alert('Please complete Step 1 (Project Name) and Step 2 (Draw at least one AOI) before final submission.');
+        return;
+    }
+    try {
+        await projectStore.submitProject();
+        alert('Project successfully ' + (isUpdateMode.value ? 'updated.' : 'created!'));
+        router.push('/');
+    } catch (error) {
+        console.error("Submission Error:", error);
+        alert('Error submitting project. Check the console for API error details.');
+    }
 };
 
 // Helper for navigation (back button now always goes to Home)
@@ -91,28 +91,33 @@ const goBack = () => {
 
 // Helper for step progression (remains the same)
 const nextStep = () => {
-   if (currentStep.value === 1 && !projectName.value) {
-       alert('Please enter a Project Name.');
-       return;
-   }
-   if (currentStep.value === 2 && projectForm.value.aoiDrafts.length === 0) {
-       alert('Please define at least one Area of Interest.');
-       return;
-   }
-   projectStore.nextStep();
+    if (currentStep.value === 1 && !projectName.value) {
+        alert('Please enter a Project Name.');
+        return;
+    }
+    if (currentStep.value === 2 && projectForm.value.aoiDrafts.length === 0) {
+        alert('Please define at least one Area of Interest.');
+        return;
+    }
+    projectStore.nextStep();
 };
 
 // Helper to determine active/visited status (remains the same)
 const isStepActive = (step) => currentStep.value === step;
 const isStepVisited = (step) => step < currentStep.value;
 
+const progressWidth = computed(() => {
+    // 1 step = 25%, 2 steps = 50%, etc.
+    const percentage = (currentStep.value - 1) * 25;
+    return `${percentage}%`;
+});
 </script>
 
 <template>
     <div v-if="isDataLoading" class="loading-message">Loading existing project data...</div>
     <div v-else class="configure-project-ui bg-gray-900  text-white ">
 
-        <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[10000]">
+        <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[100]">
             <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
 
                 <button
@@ -123,7 +128,7 @@ const isStepVisited = (step) => step < currentStep.value;
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    
+
                 </button>
 
                 <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
@@ -142,12 +147,58 @@ const isStepVisited = (step) => step < currentStep.value;
                 <button v-else @click="handleSubmit"
                     class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 text-sm"
                     :disabled="!projectName || projectForm.aoiDrafts.length === 0"
-                    :class="{'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0}">
+                    :class="{ 'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0 }">
                     {{ isUpdateMode ? 'UPDATE' : 'SUBMIT' }}
                 </button>
             </div>
 
-            <div class="flex justify-between items-center relative mb-2">
+
+            <div class="relative mb-2 w-full px-4 sm:px-6 md:px-8">
+                
+                <div class="absolute top-4 left-0 right-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12"
+                    :class="{
+                        // Default line color: Green if in Update Mode, Gray otherwise
+                        'bg-green-600': isUpdateMode,
+                        'bg-gray-700': !isUpdateMode
+                    }">
+                </div>
+
+                <div class="absolute top-4 left-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12 bg-green-600"
+                     :style="{ width: progressWidth }">
+                </div>
+
+                <div class="flex justify-between items-center relative z-10">
+                    <template v-for="step in 4" :key="step">
+                        <div class="w-1/4 flex flex-col items-center cursor-pointer"
+                            @click="projectStore.projectForm.currentStep = step">
+                            
+                            <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300"
+                                :class="{
+                                    // Current Step: Always Cyan
+                                    'bg-cyan-500 border-cyan-500 text-white': isStepActive(step),
+                                    
+                                    // Completed Step (Visited): Orange in Update Mode, Green otherwise
+                                    'bg-orange-600 border-orange-600 text-white': isStepVisited(step) && !isStepActive(step) && isUpdateMode,
+                                    'bg-green-600 border-green-600 text-white': isStepVisited(step) && !isStepActive(step) && !isUpdateMode,
+                                    
+                                    // Incomplete Step: Gray
+                                    'bg-gray-700 border-gray-600 text-gray-400': !isStepVisited(step) && !isStepActive(step)
+                                }">
+                                {{ step }}
+                            </div>
+
+                            <span class="text-xs mt-1 text-center truncate w-full"
+                                :class="{ 'text-cyan-400 font-bold': isStepActive(step), 'text-gray-400': !isStepActive(step) }">
+                                {{ stepNames[step - 1] }}
+                            </span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            
+
+            <!-- <div class="flex justify-between items-center relative mb-2">
                 <template v-for="step in 4" :key="step">
                     <div class="w-1/4 flex flex-col items-center relative z-10">
                         <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer"
@@ -172,13 +223,14 @@ const isStepVisited = (step) => step < currentStep.value;
                            }" :class="{'bg-green-600': isStepVisited(step), 'bg-gray-700': !isStepVisited(step)}">
                     </div>
                 </template>
-            </div>
+            </div> -->
         </div>
 
-        <div class="w-full min-h-[70vh]  max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
+        <div
+            class="w-full min-h-[70vh]  max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
 
 
-            <div class="step-content border border-gray-700  rounded-xl min-h-[65vh] pt-4 overflow-y-scroll">
+            <div class="step-content border border-gray-700 rounded-xl min-h-[65vh] pt-4 overflow-y-auto">
                 <Step1BasicInfo v-if="currentStep === 1" :project-data="projectForm" />
                 <Step2DefineAOI v-if="currentStep === 2" :project-data="projectForm" />
                 <Step3AlgoMapping v-if="currentStep === 3" :project-data="projectForm" />
@@ -230,5 +282,3 @@ const isStepVisited = (step) => step < currentStep.value;
     color: #FF9800;
 }
 </style>
-
-

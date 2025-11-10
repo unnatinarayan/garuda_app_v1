@@ -3,6 +3,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useProjectStore } from '@/stores/ProjectStore.js'; // Import the store
+import ShowAlert from '@/components/common/ShowAlert.vue'
 
 const projectStore = useProjectStore(); 
 const projectData = projectStore.projectForm; // Still keep a reference for auxDataDrafts
@@ -27,6 +28,8 @@ const addAuxData = () => {
 const removeAuxData = (key) => {
     projectData.auxDataDrafts = projectData.auxDataDrafts.filter(draft => draft.key !== key);
 };
+
+
 </script>
 
 

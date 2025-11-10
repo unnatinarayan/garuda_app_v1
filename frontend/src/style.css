@@ -12,7 +12,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* DEFAULT (Light Theme) */
-    --bg-color: #030712;
+    --bg-color: #0f172a;
     --container-bg: #0f172a; /* Slate 900 */
     --text-color: #e5e7eb; /* Gray 200 */
     --text-muted: #9ca3af; /* Gray 400 */
