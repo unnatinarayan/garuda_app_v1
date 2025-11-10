@@ -1,7 +1,5 @@
 <!-- DisplayProjectUI.vue  -->
 
-
-
 <script setup>
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -149,7 +147,7 @@ const goBack = () => {
 
 
 
-<template>
+<template class="min-h-[70vh]">
     <div id="manage-view" class="min-h-[70vh] bg-gray-900 text-white flex justify-center ">
 
         <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[10000]">
@@ -163,50 +161,18 @@ const goBack = () => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    <span class="hidden sm:inline">Back to Home</span>
-                    <span class="sm:hidden"></span>
+                   
                 </button>
 
-                <h1 class="text-xl  font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
+                <h1 class="text-2xl mr-5 font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
                 </h1>
 
-                <!-- <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
-                    {{ isUpdateMode ? 'Update Project: ' : 'Add New Project' }}
-                    <span v-if="projectName && isUpdateMode" class="text-cyan-400">{{ projectName }}</span>
-                </h1> -->
-
-                <!-- <button
-                    v-if="!isFinalStep"
-                    @click="nextStep"
-                    class="px-3 py-1 text-cyan-400 rounded-lg font-semibold transition duration-150 text-sm"
-                >
-                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block ml-1"
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
-                </button> -->
-                <!-- <button
-                    v-else
-                    @click="handleSubmit"
-                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 text-sm"
-                    :disabled="!projectName || projectForm.aoiDrafts.length === 0"
-                    :class="{'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0}"
-                >
-                    {{ isUpdateMode ? 'FINAL UPDATE' : 'FINAL SUBMIT' }}
-                </button> -->
+                
             </div>
         </div>
         <div class="w-full max-w-4xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-2 relative">
 
-            <!-- <header class="pb-2 mb-2 flex items-center">
-            <button @click="goBack" class="mr-4 text-cyan-400 hover:text-cyan-300 transition duration-150" title="Back to Home">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            </button>
-            <h1 class="text-xl  font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}</h1>
-            <span v-if="isMonitorMode" class="ml-4 px-3 py-1 bg-purple-600 rounded-full text-sm font-semibold">Live Mode</span>
-        </header> -->
-
+            
             <div class="mt-6">
 
                 <div class="flex justify-between items-center mb-4 space-x-3">
@@ -227,21 +193,7 @@ const goBack = () => {
 
                 </div>
 
-                <!-- <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-sm">
-                <select v-model="filterStatus" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Status</option>
-                    <option v-for="s in availableStatuses" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <select v-model="filterRole" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Role</option>
-                    <option v-for="r in availableRoles" :key="r" :value="r">{{ r.charAt(0).toUpperCase() + r.slice(1) }}</option>
-                </select>
-                <select class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-                    <option value="">Filter Type</option>
-                </select>
-                <input type="date" v-model="filterDate" class="p-3 rounded-xl bg-gray-700 text-gray-400 border border-gray-600">
-            </div> -->
-
+                
                 <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     <p v-if="isLoading" class="text-center py-8 text-gray-400">Loading projects...</p>
                     <p v-else-if="errorMessage" class="text-center py-8 text-red-500">{{ errorMessage }}</p>
@@ -250,12 +202,13 @@ const goBack = () => {
 
                     <div v-for="project in filteredProjects" :key="project.id"
                         class="flex justify-between items-center p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition duration-150 shadow-md border-l-4 border-cyan-500">
-                        <div class="flex-grow">
+                        <div class="flex flex-col">
                             <h3 class="text-xl font-bold text-white">{{ project.project_name }}</h3>
-                            <p class="text-sm text-gray-400 truncate">{{ project.description || 'No description.' }}</p>
                             <span
-                                class="text-xs font-semibold px-2 py-0.5 mt-1 rounded text-cyan-200 bg-cyan-700 inline-block">Role:
+                                class="text-xs font-semibold px-2 py-0.5 mt-1 rounded text-cyan-200 bg-green-700 inline-block">Role:
                                 {{ project.role }}</span>
+                            <p class="text-sm text-gray-400 overflow-hidden whitespace-nowrap 	max-w-[15ch] text-ellipsis">{{ project.description || 'No description.' }}</p>
+                            
                         </div>
 
                         <div class="flex space-x-2 flex-shrink-0 ml-4">
@@ -330,111 +283,3 @@ const goBack = () => {
 </style>
 
 
-
-
-<!-- 
-<script setup>
-import { onMounted, ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useProjectStore } from '@/stores/ProjectStore.js';
-
-const router = useRouter();
-const route = useRoute();
-const projectStore = useProjectStore();
-
-// UI State
-const isLoading = ref(true);
-const errorMessage = ref('');
-const isMonitorMode = computed(() => route.query.mode === 'monitor');
-
-// // Filter/Search State
-// const searchTerm = ref('');
-// const filterRole = ref('');
-// const filterStatus = ref('');
-// const filterDate = ref('');
-
-// Available filter options (derived from store data or mock)
-const availableRoles = ['owner', 'analyst', 'viewer'];
-const availableStatuses = ['Active', 'Draft', 'Archived']; 
-
-onMounted(async () => {
-    isLoading.value = true;
-    try {
-        await projectStore.fetchUserProjects();
-    } catch (error) {
-        errorMessage.value = 'Failed to load projects.';
-    } finally {
-        isLoading.value = false;
-    }
-});
-
-// COMPUTED PROPERTY FOR FILTERING
-const filteredProjects = computed(() => {
-    if (isLoading.value) return [];
-    
-    // Start with all projects from the store
-    let projects = projectStore.userProjects;
-
-    // 1. Search Filter (by name/description)
-    if (searchTerm.value) {
-        const term = searchTerm.value.toLowerCase();
-        projects = projects.filter(p =>
-            p.project_name.toLowerCase().includes(term) ||
-            p.description?.toLowerCase().includes(term)
-        );
-    }
-    
-    // 2. Role Filter (based on the user's role in the project)
-    if (filterRole.value) {
-        projects = projects.filter(p => p.role === filterRole.value);
-    }
-    
-    // 3. Status Filter (MOCK - requires a 'status' field in the DB)
-    if (filterStatus.value) {
-        // For demonstration, we mock Status based on the first letter of the project name
-        // In a real app, this would be a DB column.
-        if (filterStatus.value === 'Active') {
-            projects = projects.filter(p => p.project_name.startsWith('A'));
-        }
-    }
-
-    // 4. Mode Filter (Monitor vs Manage)
-    if (isMonitorMode.value) {
-        // In monitor mode, maybe only show projects where the user is an analyst or owner
-        projects = projects.filter(p => p.role === 'owner' || p.role === 'analyst');
-    }
-
-    return projects;
-});
-
-
-const handleProjectAction = (project) => {
-    if (isMonitorMode.value) {
-        // Action: Monitor Project (opens map UI with live AOIs)
-        router.push({ name: 'monitor-map', params: { id: project.id } }); 
-    } else {
-        // Action: Manage/Update Project (reuses ConfigureProjectUI)
-        router.push({ name: 'update-project', params: { id: project.id } }); 
-    }
-};
-
-const handleDelete = async (projectId, projectName) => {
-    // Note: Replaced `confirm` with a simple alert/check as per core rules.
-    const confirmed = prompt(`Type DELETE to confirm deletion of project: "${projectName}"`);
-    if (confirmed === 'DELETE') {
-        try {
-            await projectStore.deleteProject(projectId);
-            await projectStore.fetchUserProjects(); // Refresh list
-            alert(`Project "${projectName}" deleted successfully.`);
-        } catch (error) {
-            alert('Deletion failed: You must be the project owner. See console for details.');
-            console.error(error);
-        }
-    }
-};
-
-const goBack = () => {
-    router.push('/');
-};
-
-</script> -->

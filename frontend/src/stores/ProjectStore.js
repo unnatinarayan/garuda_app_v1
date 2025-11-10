@@ -161,7 +161,8 @@ export const useProjectStore = defineStore('project', () => {
 
     async function markAlertAsRead(alertId) {
         const session = UserSession.getInstance();
-        const userId = session.getUserId();
+        // const userId = session.getUserId();
+        const userId = session.userId;
 
         if (!userId) return;
 
@@ -170,10 +171,11 @@ export const useProjectStore = defineStore('project', () => {
             await api.client.post('/alerts/mark-read', { userId, notificationId: alertId });
 
             // 2. Remove it locally
-            activeAlerts.value = activeAlerts.value.filter(a => a.id !== alertId);
+            // activeAlerts.value = activeAlerts.value.filter(a => a.id !== alertId);
         } catch (error) {
             console.error('Failed to mark alert as read:', error);
             // Optionally, re-add the alert if the API call failed
+            throw error;
         }
     }
 

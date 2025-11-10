@@ -20,6 +20,8 @@ export class ProjectController {
     this.router.post('/', this.createProject);         // POST /api/projects
     this.router.get('/', this.getProjectsByUser);        // GET /api/projects
     this.router.get('/algorithms', this.getAlgorithmCatalogue); // GET /api/projects/algorithms
+    this.router.get('/:id/alerts', this.getProjectAlerts);
+
     this.router.get('/:id', this.getProjectDetails);     // GET /api/projects/:id
     this.router.put('/:id', this.updateProject);          // PUT /api/projects/:id (Update)
     this.router.delete('/:id', this.deleteProject);      // DELETE /api/projects/:id
@@ -91,6 +93,29 @@ export class ProjectController {
         }
     }
 
+
+    /**
+     * GET /api/projects/:id/alerts
+     * Fetches all alerts for a project, enriched with names.
+     */
+    getProjectAlerts = async (req, res) => {
+        const projectId = parseInt(req.params.id);
+        const { fromDate, toDate } = req.query; // Capture date filters
+
+        if (isNaN(projectId)) {
+             return res.status(400).json({ message: 'Invalid Project ID format.' });
+        }
+        try {
+            const alerts = await this.projectService.getProjectAlerts(projectId, fromDate, toDate);
+            return res.status(200).json(alerts);
+        } catch (error) {
+            console.error('Controller Error fetching project alerts:', error);
+            return res.status(500).json({ error: 'Failed to fetch project alerts.', details: error.message });
+        }
+    }
+
+
+
     /**
      * DELETE /api/projects/:id
      * Deletes a project and all associated data.
@@ -159,4 +184,7 @@ export class ProjectController {
             });
         }
     }
+
+
+
 }

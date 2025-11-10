@@ -81,5 +81,14 @@ export class ApiClient {
     async deleteProject(projectId) {
         await this.client.delete(`/projects/${projectId}`);
     }
+
+    async getProjectAlerts(projectId, fromDate, toDate) {
+        const params = {};
+        if (fromDate) params.fromDate = fromDate;
+        if (toDate) params.toDate = toDate;
+        
+        const response = await this.client.get(`/projects/${projectId}/alerts`, { params });
+        return response.data;
+    }
     
 }

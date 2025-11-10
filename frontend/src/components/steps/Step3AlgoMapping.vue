@@ -148,13 +148,13 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="p-4">
+    <div class="">
         
         <div v-if="projectData.aoiDrafts.length === 0" class="bg-red-800 p-3 rounded text-white mb-4">
             You must define at least one AOI in Step 2 before configuring algorithms.
         </div>
 
-        <div v-else class="mapping-container space-y-6">
+        <div v-else class="mapping-container space-y-2">
 
             <div class="form-group w-full">
                 <label class="text-gray-400 block mb-1 font-semibold">Select Target AOI:</label>
@@ -168,7 +168,7 @@ onMounted(async () => {
                 <p v-if="selectedAOI" class="text-sm text-gray-500 mt-1">Configure algorithms for AOI: <span class="text-white">{{ selectedAOI.name }}</span></p>
             </div>
 
-            <div v-if="selectedAOI">
+            <div v-if="selectedAOI" >
                 <h4 class="text-lg font-semibold text-cyan-400 mb-3">Map Algorithms to this AOI:</h4>
 
                 <div v-if="loadingAlgos" class="text-gray-500">Loading catalogue...</div>

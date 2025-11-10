@@ -9,7 +9,9 @@ const props = defineProps({
 
 const newUser = ref('');
 const newRole = ref('viewer');
-const availableRoles = ['owner', 'analyst', 'viewer'];
+const availableRoles = [ 'analyst', 'viewer'];
+
+const showRoleOptions = ref(false);
 
 const canAddUser = computed(() => {
     return newUser.value.trim() !== '' && 
@@ -26,6 +28,11 @@ const addUser = () => {
         newUser.value = '';
         newRole.value = 'viewer';
     }
+};
+
+const selectRole = (role) => {
+    newRole.value = role;
+    showRoleOptions.value = false; // Close the dropdown after selection
 };
 
 const removeUser = (userId) => { 
@@ -49,18 +56,38 @@ const removeUser = (userId) => {
             placeholder="User ID / Email" 
             class="w-full sm:flex-grow p-3 bg-gray-600 text-white rounded border border-gray-500 focus:border-cyan-400"
         />
-        
-        <div class="flex gap-3 w-full sm:w-auto">
-            <select 
-                v-model="newRole" 
-                class="w-1/3 sm:w-auto p-3 bg-gray-600 text-white rounded border border-gray-500"
-            >
-                <option v-for="role in availableRoles" :key="role" :value="role">{{ role.charAt(0).toUpperCase() + role.slice(1) }}</option>
-            </select>
+
+        <div class="relative z-10 flex gap-3 w-full sm:w-auto">
+            
+            <div class="relative">
+                <button 
+                    @click="showRoleOptions = !showRoleOptions" 
+                    class="p-3 bg-gray-600 text-white rounded border border-gray-500 hover:bg-gray-500 font-semibold transition duration-150 flex items-center justify-center"
+                    style="min-width: 100px;" 
+                    aria-haspopup="true"
+                    :aria-expanded="showRoleOptions"
+                >
+                    {{ newRole.charAt(0).toUpperCase() + newRole.slice(1) }}
+                </button>
+
+                <div 
+                    v-if="showRoleOptions" 
+                    class="absolute left-0 mt-1 w-full rounded shadow-lg bg-gray-700 border border-gray-600 z-20 overflow-hidden"
+                >
+                    <button 
+                        v-for="role in availableRoles" 
+                        :key="role"
+                        @click="selectRole(role)"
+                        class="w-full text-left p-2 text-white hover:bg-gray-600 transition duration-100"
+                    >
+                        {{ role.charAt(0).toUpperCase() + role.slice(1) }}
+                    </button>
+                </div>
+            </div>
             <button 
                 @click="addUser" 
                 :disabled="!canAddUser"
-                class="w-2/3 sm:w-auto px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed"
+                class="w-2/3 sm:w-auto px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 disabled:bg-gray-500 disabled:cursor-not-allowed flex-grow"
             >
                 Add User
             </button>
@@ -91,9 +118,8 @@ const removeUser = (userId) => {
             </button>
         </div>
     </div>
-  </div>
+    </div>
 </template>
-
 <style scoped>
 /* No specific scoped changes needed as Tailwind handles responsiveness */
 /* Keeping the scrollbar styles for reference/optional use */

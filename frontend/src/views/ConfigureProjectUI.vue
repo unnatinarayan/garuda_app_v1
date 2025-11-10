@@ -1,3 +1,6 @@
+<!-- frontend/src/views/ConfigureProjectUI.vue-->
+
+
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -27,6 +30,15 @@ const isDataLoading = ref(false);
 const currentStep = computed(() => projectStore.currentStep);
 const isFinalStep = computed(() => currentStep.value === 4);
 const isUpdateMode = computed(() => projectForm.value.isUpdateMode);
+
+
+const stepNames = computed(() => {
+    if (isUpdateMode.value) {
+        return ['Update Info', 'Update AOI', 'Update Watch', 'Update User'];
+    } else {
+        return ['Basic Info', 'Define AOI', 'Config Watch', 'Add Users'];
+    }
+});
 
 const projectIdParam = props.id ? parseInt(props.id) : (route.params.id ? parseInt(route.params.id) : null);
 
@@ -68,7 +80,13 @@ const handleSubmit = async () => {
 
 // Helper for navigation (back button now always goes to Home)
 const goBack = () => {
-    router.push('/');
+    if (currentStep.value > 1) {
+        // Go to the previous step (e.g., from step 3 to step 2)
+        projectStore.projectForm.currentStep = currentStep.value - 1;
+    } else {
+        // If on the first step, go back to the home page
+        router.push('/');
+    }
 };
 
 // Helper for step progression (remains the same)
@@ -99,83 +117,75 @@ const isStepVisited = (step) => step < currentStep.value;
 
                 <button
                     class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base"
-                    @click="goBack"
-                >
-                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span class="hidden sm:inline">Back to Home</span>
-                    <span class="sm:hidden"></span>
+                    @click="goBack">
+                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    
                 </button>
 
                 <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
-                    {{ isUpdateMode ? 'Update Project: ' : 'Add New Project' }}
+                    {{ isUpdateMode ? '' : 'Add New Project' }}
                     <span v-if="projectName && isUpdateMode" class="text-cyan-400">{{ projectName }}</span>
                 </h1>
 
-                <button
-                    v-if="!isFinalStep"
-                    @click="nextStep"
-                    class="px-3 py-1 text-cyan-400 rounded-lg font-semibold transition duration-150 text-sm"
-                >
-                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block ml-1"
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                <button v-if="!isFinalStep" @click="nextStep"
+                    class="px-3 py-1 text-cyan-400 rounded-lg font-semibold transition duration-150 text-sm">
+                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block ml-1" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                 </button>
-                <button
-                    v-else
-                    @click="handleSubmit"
+                <button v-else @click="handleSubmit"
                     class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-150 text-sm"
                     :disabled="!projectName || projectForm.aoiDrafts.length === 0"
-                    :class="{'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0}"
-                >
-                    {{ isUpdateMode ? 'FINAL UPDATE' : 'FINAL SUBMIT' }}
+                    :class="{'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0}">
+                    {{ isUpdateMode ? 'UPDATE' : 'SUBMIT' }}
                 </button>
             </div>
 
             <div class="flex justify-between items-center relative mb-2">
                 <template v-for="step in 4" :key="step">
                     <div class="w-1/4 flex flex-col items-center relative z-10">
-                        <div
-                            class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer"
-                            @click="projectStore.projectForm.currentStep = step"
-                            :class="{
+                        <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer"
+                            @click="projectStore.projectForm.currentStep = step" :class="{
                                 'bg-cyan-500 border-cyan-500 text-white': isStepActive(step),
                                 'bg-green-600 border-green-600 text-white': isStepVisited(step) && !isStepActive(step),
                                 'bg-gray-700 border-gray-600 text-gray-400': !isStepVisited(step) && !isStepActive(step)
-                            }"
-                        >
+                            }">
                             {{ step }}
                         </div>
-                        <span class="text-xs mt-1 text-center" :class="{'text-cyan-400 font-bold': isStepActive(step), 'text-gray-400': !isStepActive(step)}">
-                            {{ ['Basic Info', 'Define AOI', 'Config Watch', 'Add Users'][step - 1] }}
+
+                        <span class="text-xs mt-1 text-center"
+                            :class="{ 'text-cyan-400 font-bold': isStepActive(step), 'text-gray-400': !isStepActive(step) }">
+                            {{ stepNames[step - 1] }}
                         </span>
+                        
                     </div>
-                   <div
-                           v-if="step < 4"
-                           class="absolute top-4  h-0.5 z-0 transition-all duration-500"
-                           :style="{
+                    <div v-if="step < 4" class="absolute top-4  h-0.5 z-0 transition-all duration-500" :style="{
                                left: (step * 31 - 12.5) + '%',
                                width: '28%',
                                transform: 'translateX(-50%)',
-                           }"
-                           :class="{'bg-green-600': isStepVisited(step), 'bg-gray-700': !isStepVisited(step)}"
-                       ></div>
+                           }" :class="{'bg-green-600': isStepVisited(step), 'bg-gray-700': !isStepVisited(step)}">
+                    </div>
                 </template>
             </div>
         </div>
 
-        <div class="w-full h-[70vh] max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
+        <div class="w-full min-h-[70vh]  max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
 
 
-            <div class="step-content border border-gray-700  rounded-xl max-h-[70vh] pt-4 overflow-y-auto">
+            <div class="step-content border border-gray-700  rounded-xl min-h-[65vh] pt-4 overflow-y-scroll">
                 <Step1BasicInfo v-if="currentStep === 1" :project-data="projectForm" />
                 <Step2DefineAOI v-if="currentStep === 2" :project-data="projectForm" />
                 <Step3AlgoMapping v-if="currentStep === 3" :project-data="projectForm" />
                 <Step4AddUsers v-if="currentStep === 4" :project-data="projectForm" />
             </div>
 
-            </div>
+        </div>
     </div>
 </template>
 
@@ -188,7 +198,8 @@ const isStepVisited = (step) => step < currentStep.value;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 50px;
+    /* padding-top: 50px; */
+    padding-top: 2rem;
 }
 
 .step-content {

@@ -6,6 +6,7 @@ import { ApiClient } from './api/ApiClient.js'; // Import ApiClient to use its u
 import { ref, watchEffect, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { UserSession } from './classes/UserSession.js';
+import HighchartsVue from 'highcharts-vue';
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue'; // <<< Updated extension
 import { useProjectStore } from './stores/ProjectStore.js'; // Import store for alerts
 
@@ -125,7 +126,7 @@ const profileInitials = computed(() => {
 
 
 <template>
-  <div id="app-wrapper">
+  <div id="app-wrapper" class="h-screen flex flex-col">
     
     <div id="splash-screen" class="fixed inset-0 flex flex-col justify-center items-center z-50 transition-opacity duration-500" style="background-color: var(--bg-color);">
         <div class="text-4xl font-extrabold tracking-widest flex items-center space-x-4" style="color: var(--text-color);">
@@ -155,12 +156,15 @@ const profileInitials = computed(() => {
             <div @click="handleLogout" title="Logout" class="cursor-pointer w-9 h-9 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm hover:bg-red-500 transition-colors duration-200">
                 {{ profileInitials }}
             </div>
+            
         </div>
     </div>
-    <main class="app-content" :class="{'pt-20': showNavbar}"> 
+
+    <main class="app-content flex-grow mt-10 overflow-y-auto" :class="{'pt-10': showNavbar} "> 
       <RouterView />
     </main>
-    <footer class="app-footer">
+
+    <footer class="app-footer flex-shrink-0 bg-gray-900 h-10 flex items-center justify-center">
   <h1 class="text-center text-sm font-bold text-white">Copyright &copy; 2025 VEDAS SAC ISRO </h1>
 </footer>
  </div>
@@ -176,7 +180,8 @@ const profileInitials = computed(() => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 body {
     font-family: 'Inter', sans-serif; /* Recommended font for modern UI */
@@ -217,31 +222,28 @@ body {
   /* Retain padding on the sides, but let pt-20 handle the top spacing */
   padding-left: 10px;
   padding-right: 10px;
-  padding-bottom: 70px;
-  min-height: 100vh;
+  
 }
 .app-footer {
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  
   background-color: #333; /* Add your desired background color */
   padding: 0.5rem;
-  text-align: center;
+  
   
 }
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .app-footer {
     padding: 0.5rem;
-    /* height: 40px; */
+    
   }
-}
+} */
 @media (max-width: 640px) {
     .app-content {
         padding-left: 5px; 
         padding-right: 5px;
-        padding-bottom: 55px;
-        height: 80vh;
+        padding-bottom: 2.8rem;
+        /* height: 80vh; */
     }
     /* Ensure the wrapper inside configure UI is full width on mobile */
     .configure-project-ui .w-full.max-w-6xl.mx-auto {

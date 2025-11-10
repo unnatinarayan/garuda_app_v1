@@ -378,6 +378,53 @@ export class ProjectService {
         }
     }
 
+
+
+    async getProjectAlerts(projectId, fromDate, toDate) {
+        let dateFilter = '';
+        const params = [projectId];
+        
+        // Build dynamic date filtering
+        if (fromDate) {
+            params.push(fromDate);
+            dateFilter += ` AND a.alert_timestamp >= $${params.length}::timestamp with time zone`;
+        }
+        if (toDate) {
+            params.push(toDate);
+            dateFilter += ` AND a.alert_timestamp <= $${params.length}::timestamp with time zone`;
+        }
+
+        const query = `
+            SELECT
+                a.id,
+                a.message,
+                a.alert_timestamp as timestamp,
+                p.name as project_name,
+                aoi.name as aoi_name,
+                aam.aoi_id,
+                aam.project_id,
+                aam.change_algo_id as algo_id
+            FROM alerts a
+            JOIN aoi_algorithm_mapping aam ON a.mapping_id = aam.id
+            JOIN project p ON aam.project_id = p.id
+            JOIN area_of_interest aoi ON aam.project_id = aoi.project_id AND aam.aoi_id = aoi.aoi_id
+            WHERE aam.project_id = $1
+            ${dateFilter}
+            ORDER BY a.alert_timestamp DESC;
+        `;
+        
+        const result = await db.query(query, params);
+        
+        return result.rows.map(row => ({
+            ...row,
+            projectId: row.project_id,
+            aoiId: row.aoi_id,
+            algoId: row.algo_id,
+            title: `${row.project_name}: ${row.aoi_name} alerted by ${row.algo_id}`,
+        }));
+    }
+    
+
     /**
      * Deletes a project and all related records (cascade deletes handle most).
      * @param {number} projectId

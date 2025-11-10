@@ -100,6 +100,17 @@ async function runKafkaConsumer() {
                     }
                     const { project_id, aoi_id, change_algo_id } = mappingResult.rows[0];
 
+                    const projectDetails = await db.query(
+                        `SELECT p.name AS project_name, aoi.name AS aoi_name 
+                         FROM project p, area_of_interest aoi
+                         WHERE p.id = $1 AND aoi.project_id = $1 AND aoi.aoi_id = $2`,
+                        [project_id, aoi_id] // Use project_id and aoi_id from mapping result
+                    );
+
+                    const project_name = projectDetails.rows[0]?.project_name || `Project ${project_id}`;
+                    const aoi_name = projectDetails.rows[0]?.aoi_name || `AOI ${aoi_id}`;
+
+
                     // Step 2: Fetch all users (with contact details) associated with the project
                     const usersResult = await db.query(
                         `SELECT u.user_id, u.email, u.contactno 
@@ -124,7 +135,10 @@ async function runKafkaConsumer() {
                         aoiId: aoi_id, // Use the retrieved aoi_id
                         algoId: change_algo_id, // Use the retrieved algo_id
                         timestamp: payload.alert_timestamp,
-                        title: `Project Alert: ${project_id} (${change_algo_id})`,
+                        project_name: project_name, // NEW
+                        aoi_name: aoi_name,         // NEW
+                        title: `${project_name}: ${aoi_name} has an Alert for ${change_algo_id}`, // UPDATED
+                        // title: `Project Alert: ${project_id} (${change_algo_id})`,
                     };
 
                     // Process the alert for each recipient user
