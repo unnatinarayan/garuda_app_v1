@@ -1,19 +1,17 @@
-<!-- LoginForm.vue -->
-
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { UserSession } from '@/classes/UserSession.js'; 
-import { ApiClient } from '@/api/ApiClient.js'; // Import ApiClient to expose signup with new fields
+import { ApiClient } from '@/api/ApiClient.js';
 
 const router = useRouter();
 const session = UserSession.getInstance();
-const api = ApiClient.getInstance(); // Get API client instance
+const api = ApiClient.getInstance();
 
 const username = ref('testuser');
 const password = ref('pass');
-const email = ref('');         // <-- NEW FIELD
-const contactno = ref('');     // <-- NEW FIELD
+const email = ref('');
+const contactno = ref('');
 const errorMessage = ref('');
 const isSigningUp = ref(false); 
 
@@ -21,17 +19,17 @@ const submitAuth = async () => {
     errorMessage.value = '';
 
     if (isSigningUp.value) {
-        // --- SIGNUP LOGIC (Updated to include email and contactno) ---
+        // --- SIGNUP LOGIC ---
         if (!username.value || !password.value || !email.value || !contactno.value) {
             errorMessage.value = 'All fields are required for signup.';
             return;
         }
 
         try {
+            // Pass all four parameters to signup
             await api.signup(username.value, password.value, email.value, contactno.value);
             errorMessage.value = 'Signup successful! Please log in with your new account.';
-            isSigningUp.value = false; // Switch to login view
-            // Clear signup specific fields
+            isSigningUp.value = false;
             email.value = '';
             contactno.value = '';
 
@@ -127,12 +125,11 @@ const submitAuth = async () => {
 </template>
 
 <style scoped>
-/* Basic styling for visibility in the dark theme */
 .login-container {
-    background-color: #1f2937; /* Dark background */
+    background-color: #1f2937;
     color: white;
 }
 .error-message {
-    background-color: #dc2626; /* Red 600 */
+    background-color: #dc2626;
 }
 </style>

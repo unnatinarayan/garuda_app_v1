@@ -131,7 +131,7 @@ const formatMessage = (msg) => {
             </span>
         </button>
 
-        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-100000 ring-1 ring-black ring-opacity-5 
+        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[1000000] ring-1 ring-black ring-opacity-5 
                     w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]">
             <div class="p-3 border-b border-gray-600">
                 <h3 class="text-lg font-semibold text-white">Alerts</h3>

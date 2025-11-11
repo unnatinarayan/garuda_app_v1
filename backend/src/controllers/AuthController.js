@@ -16,7 +16,9 @@ export class AuthController {
 
     initializeRoutes() {
         this.router.post('/login', this.login);
-        this.router.post('/signup', this.signup); // <-- NEW SIGNUP ROUTE
+        this.router.post('/signup', this.signup); 
+        this.router.get('/profile/:userId', this.getUserProfile); 
+
     }
 
     /**
@@ -24,7 +26,7 @@ export class AuthController {
      */
     login = async (req, res) => {
         const { username, password } = req.body;
-        const userId = username; // Assume userId is the same as the username/email for login
+        const userId = username; 
 
         try {
             const user = await UserModel.findById(userId);
@@ -94,4 +96,40 @@ export class AuthController {
             return res.status(500).json({ success: false, message: 'Server error during signup.' });
         }
     }
+
+        /**
+     * GET /api/auth/profile/:userId - Fetches user profile with project statistics.
+     */
+    getUserProfile = async (req, res) => {
+        const { userId } = req.params;
+        const requestingUserId = req.header('X-User-ID');
+
+        // Security check: Users can only view their own profile
+        if (userId !== requestingUserId) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Unauthorized: You can only view your own profile.' 
+            });
+        }
+
+        try {
+            const userProfile = await UserModel.getUserProfileWithStats(userId);
+
+            if (!userProfile) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'User not found.' 
+                });
+            }
+
+            return res.status(200).json(userProfile);
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Server error while fetching profile.' 
+            });
+        }
+    }
+
 }

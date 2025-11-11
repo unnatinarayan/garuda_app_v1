@@ -6,6 +6,7 @@ import { ref, watchEffect, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { UserSession } from './classes/UserSession.js';
 import NotificationDropdown from '@/components/common/NotificationDropdown.vue';
+import ProfileDropdown from '@/components/common/ProfileDropdown.vue';
 import { useProjectStore } from './stores/ProjectStore.js';
 
 const router = useRouter();
@@ -75,10 +76,10 @@ const goToHome = () => {
     }
 };
 
-const handleLogout = () => {
-    session.logout();
-    router.push('/login');
-};
+// const handleLogout = () => {
+//     session.logout();
+//     router.push('/login');
+// };
 
 const profileInitials = computed(() => {
     const name = session.username || 'User';
@@ -115,10 +116,12 @@ const profileInitials = computed(() => {
                 </svg>
             </div>
             <NotificationDropdown />
+
+            <ProfileDropdown />
             
-            <div @click="handleLogout" title="Logout" class="cursor-pointer w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs hover:bg-red-500 transition-colors duration-200">
+            <!-- <div @click="handleLogout" title="Logout" class="cursor-pointer w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs hover:bg-red-500 transition-colors duration-200">
                 {{ profileInitials }}
-            </div>
+            </div> -->
         </div>
     </div>
 
