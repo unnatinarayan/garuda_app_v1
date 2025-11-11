@@ -155,7 +155,6 @@ const chartSeriesData = computed(() => {
         
         return series;
     });
-
     
     return allSeries.filter(s => s.data.length > 2); // Only return series with actual data
 });
@@ -270,13 +269,10 @@ const chartOptions = computed(() => {
     };
 });
 
-
-
 // --- ACTIONS ---
 
 const applyFilters = () => {
     if (!dateFilter.value.from || !dateFilter.value.to) {
-        
         alert('Please select both start and end dates');
         return;
     }
@@ -426,7 +422,7 @@ watch(uniqueAlgorithms, (newAlgos) => {
         <div class="flex flex-col  p-3 overflow-y-auto">
             
             <!-- Controls Section -->
-            <div class="flex-shrink-0 flex-column">
+             <div class="flex-shrink-0 flex-column">
                 <div class="flex justify-between items-center">
                         <label class="text-gray-300 text-sm font-semibold">Select AOIs:</label>
                         
@@ -444,11 +440,10 @@ watch(uniqueAlgorithms, (newAlgos) => {
                         </label>
                 </div>
                 
-                
 
+                
                 <!-- Date Filter Row -->
                 <div class=" flex flex-row-reverse rounded-lg right-0">
-                    <!-- <label class="text-gray-300 text-sm font-semibold mb-1 block">Date Range:</label> -->
                     <div class="flex flex-row gap-1 items-center">
                         <input type="date" 
                                v-model="dateFilter.from" 
