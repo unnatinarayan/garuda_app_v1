@@ -57,11 +57,11 @@ const handleLogout = () => {
                     <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
                     <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
                 </div>
-                <div class="px-4 py-2 app-card-item rounded-xl">
+                <!-- <div class="px-4 py-2 app-card-item rounded-xl">
                     <p class="text-gray-400" style="color: var(--text-muted);">Total Alerts</p>
                     <p class="font-bold text-xl" :style="{color: activeAlerts > 0 ? '#dc2626' : 'var(--text-color)'}">{{
                         activeAlerts }}</p>
-                </div>
+                </div> -->
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

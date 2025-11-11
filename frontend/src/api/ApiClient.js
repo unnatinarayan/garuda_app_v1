@@ -54,6 +54,11 @@ export class ApiClient {
         return response.data;
     }
 
+    async userExists(userId) {
+    const response = await this.client.get(`/auth/exists/${userId}`);
+    return response.data.exists;
+}
+
     // --- Project Endpoints ---
     async createProject(bundle) {
         return this.client.post('/projects', bundle);

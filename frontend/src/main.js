@@ -3,11 +3,11 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import HighchartsVue from 'highcharts-vue'; // Import the wrapper
 import Highcharts from 'highcharts'; // Already imported by highcharts-vue, but ensure its reference is available
-// import Accessibility from 'highcharts/modules/accessibility'; // Import module
 
-import router from './router/index.js'; // Updated extension
+import router from './router/index.js'; 
+// import 'virtual:tailwindcss';
 import './style.css'; // Global styles
-import "tailwindcss";
+
 
 
 // Create the root Vue application instance

@@ -18,6 +18,7 @@ export class AuthController {
         this.router.post('/login', this.login);
         this.router.post('/signup', this.signup); 
         this.router.get('/profile/:userId', this.getUserProfile); 
+        this.router.get('/exists/:userId', this.checkUserExists);
 
     }
 
@@ -131,5 +132,16 @@ export class AuthController {
             });
         }
     }
+
+    checkUserExists = async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const user = await UserModel.findById(userId);
+        return res.json({ exists: !!user });
+    } catch (error) {
+        console.error('Check user exists error:', error);
+        return res.status(500).json({ exists: false });
+    }
+}
 
 }

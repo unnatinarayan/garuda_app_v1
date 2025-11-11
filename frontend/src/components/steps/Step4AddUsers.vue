@@ -1,7 +1,9 @@
 <!-- Step4AddUsers.vue -->
 <script setup>
 import { ProjectFormData } from '@/classes/ProjectFormData.js';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { ApiClient } from '@/api/ApiClient.js';
+const api = ApiClient.getInstance();
 
 const props = defineProps({
   projectData: ProjectFormData,
@@ -10,11 +12,13 @@ const props = defineProps({
 const newUser = ref('');
 const newRole = ref('viewer');
 const availableRoles = [ 'analyst', 'viewer'];
+const userError = ref(''); 
 
 const showRoleOptions = ref(false);
 
 const canAddUser = computed(() => {
-    return newUser.value.trim() !== '' && 
+    return newUser.value.trim() !== '' &&
+           userError.value === '' &&
            !props.projectData.users.some(u => u.userId === newUser.value.trim());
 });
 
@@ -43,6 +47,20 @@ const removeUser = (userId) => {
     }
     props.projectData.users = props.projectData.users.filter(u => u.userId !== userId);
 };
+
+let typingTimer;
+watch(newUser, (val) => {
+    userError.value = '';
+    clearTimeout(typingTimer);
+    if (!val.trim()) return;
+
+    typingTimer = setTimeout(async () => {
+        const exists = await api.userExists(val.trim());
+        if (!exists) {
+            userError.value = "User does not exist.";
+        }
+    }, 400);
+});
 </script>
 
 <template>
@@ -56,6 +74,9 @@ const removeUser = (userId) => {
             placeholder="User ID / Email" 
             class="w-full sm:flex-grow p-3 bg-gray-600 text-white rounded border border-gray-500 focus:border-cyan-400"
         />
+        <p v-if="userError" class="text-red-400 text-sm mt-1">{{ userError }}</p>
+
+
 
         <div class="relative z-10 flex gap-3 w-full sm:w-auto">
             
@@ -121,8 +142,6 @@ const removeUser = (userId) => {
     </div>
 </template>
 <style scoped>
-/* No specific scoped changes needed as Tailwind handles responsiveness */
-/* Keeping the scrollbar styles for reference/optional use */
 .user-list::-webkit-scrollbar {
   width: 8px;
 }

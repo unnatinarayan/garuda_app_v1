@@ -415,7 +415,10 @@ watch(uniqueAlgorithms, (newAlgos) => {
         <button @click="$emit('close')" 
                 class="absolute top-0 right-0 text-red-400 hover:text-red-300 text-3xl font-bold z-20 w-8 h-8 flex items-center justify-center"
                 title="Close Panel">
-            &times;
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2"/>
+  <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2"/>
+</svg>
         </button>
 
         <!-- Main Content -->
@@ -430,7 +433,7 @@ watch(uniqueAlgorithms, (newAlgos) => {
                 <div class="flex flex-wrap gap-1 overflow-y-auto">
                         <label v-for="aoi in allAois" 
                                :key="aoi.aoi_id"
-                               class="flex items-center space-x-1 text-sm text-gray-300 cursor-pointer hover:text-white px-2 py-1 rounded-full transition-colors">
+                               class="flex items-center space-x-1 text-sm text-gray-300 cursor-pointer hover:text-white px-2 rounded-full transition-colors">
                             <input type="checkbox" 
                                    :value="aoi.aoi_id" 
                                    :checked="selectedAoiIds.includes(aoi.aoi_id)"
@@ -492,9 +495,9 @@ watch(uniqueAlgorithms, (newAlgos) => {
 
             <!-- Algorithm Legend -->
             <div class="flex-shrink-0 bg-gray-700 rounded-lg p-1">
-                <div class="flex justify-between items-center mb-2">
+                <div class="flex justify-between items-center mb-1">
                     <label class="text-gray-300 text-sm font-semibold">Algorithms:</label>
-                    <div class="flex gap-2">
+                    <!-- <div class="flex gap-2">
                         <button @click="selectAllAlgos" 
                                 class="text-xs bg-cyan-600 hover:bg-cyan-700 text-white px-2 py-1 rounded">
                             All
@@ -503,9 +506,9 @@ watch(uniqueAlgorithms, (newAlgos) => {
                                 class="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded">
                             None
                         </button>
-                    </div>
+                    </div> -->
                 </div>
-                <div class="flex flex-wrap gap-3 max-h-16 overflow-y-auto">
+                <div class="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
                     <label v-for="algo in availableAlgorithms" 
                            :key="algo.algo_id"
                            class="flex items-center space-x-2 text-sm cursor-pointer transition-all"

@@ -162,7 +162,7 @@ const formatMessage = (msg) => {
                             <button @click.stop="markAsRead(alert)"
                                 class="text-red-400 hover:text-red-300 p-1 rounded-full w-6 h-6 flex items-center justify-center"
                                 title="Dismiss Alert">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12"></path>
@@ -200,16 +200,7 @@ const formatMessage = (msg) => {
 
 
 
-                    <!-- <div v-if="expandedAlertIds.includes(alert.id)"
-                        class="p-3 pt-0 bg-gray-600/50 text-white border-t border-gray-600">
-                        <p class="text-xs font-semibold mb-1 text-cyan-200">Raw Message:</p>
-                        <div class="space-y-1">
-  <div v-for="{ key, value } in formatMessage(alert.message)" :key="key" class="text-xs">
-    <span class="font-semibold text-cyan-200">{{ key }}:</span>
-    <span class="text-gray-200 break-words">{{ value }}</span>
-  </div>
-</div>
-                    </div> -->
+                    
                 </div>
             </div>
 

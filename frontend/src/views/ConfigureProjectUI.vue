@@ -7,6 +7,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/ProjectStore.js';
 import { storeToRefs } from 'pinia';
 import "tailwindcss";
+import InlineMessage from "@/components/common/InlineMessage.vue";
+import { useMessageStore } from '@/stores/MessageStore.js';
+const messageStore = useMessageStore();
+
 
 const props = defineProps({
     id: String,
@@ -50,6 +54,7 @@ onMounted(async () => {
             await projectStore.loadProjectForUpdate(projectIdParam);
             projectStore.projectForm.currentStep = 1; // Always start update flow at step 1
         } catch (error) {
+
             alert('Error loading project: ' + (error).message);
             router.push('/');
         } finally {
@@ -65,16 +70,25 @@ onMounted(async () => {
 // Method to handle final submission (remains the same)
 const handleSubmit = async () => {
     if (!projectName.value || projectForm.value.aoiDrafts.length === 0) {
-        alert('Please complete Step 1 (Project Name) and Step 2 (Draw at least one AOI) before final submission.');
+
+    messageStore.showMessage("Please complete Step 1 (Project Name) and Step 2 (Draw at least one AOI) before final submission.", "info");
+        // alert('Please complete Step 1 (Project Name) and Step 2 (Draw at least one AOI) before final submission.');
         return;
     }
     try {
         await projectStore.submitProject();
-        alert('Project successfully ' + (isUpdateMode.value ? 'updated.' : 'created!'));
+
+        messageStore.showMessage(
+  `Project successfully ${isUpdateMode.value ? 'updated.' : 'created!'}`,
+  "success"
+);
+        // alert('Project successfully ' + (isUpdateMode.value ? 'updated.' : 'created!'));
         router.push('/');
     } catch (error) {
         console.error("Submission Error:", error);
-        alert('Error submitting project. Check the console for API error details.');
+
+messageStore.showMessage("Error submitting project. Check the console for API error details.", "error");
+        // alert('Error submitting project. Check the console for API error details.');
     }
 };
 
@@ -92,11 +106,15 @@ const goBack = () => {
 // Helper for step progression (remains the same)
 const nextStep = () => {
     if (currentStep.value === 1 && !projectName.value) {
-        alert('Please enter a Project Name.');
+        messageStore.showMessage("Please enter a Project Name.", "error");
+
+        // alert('Please enter a Project Name.');
         return;
     }
     if (currentStep.value === 2 && projectForm.value.aoiDrafts.length === 0) {
-        alert('Please define at least one Area of Interest.');
+                messageStore.showMessage("Please define at least one Area of Interest.", "error");
+
+        // alert('Please define at least one Area of Interest.');
         return;
     }
     projectStore.nextStep();
@@ -116,6 +134,8 @@ const progressWidth = computed(() => {
 <template>
     <div v-if="isDataLoading" class="loading-message">Loading existing project data...</div>
     <div v-else class="configure-project-ui bg-gray-900  text-white ">
+
+        
 
         <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[100]">
             <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
@@ -198,39 +218,16 @@ const progressWidth = computed(() => {
 
             
 
-            <!-- <div class="flex justify-between items-center relative mb-2">
-                <template v-for="step in 4" :key="step">
-                    <div class="w-1/4 flex flex-col items-center relative z-10">
-                        <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer"
-                            @click="projectStore.projectForm.currentStep = step" :class="{
-                                'bg-cyan-500 border-cyan-500 text-white': isStepActive(step),
-                                'bg-green-600 border-green-600 text-white': isStepVisited(step) && !isStepActive(step),
-                                'bg-gray-700 border-gray-600 text-gray-400': !isStepVisited(step) && !isStepActive(step)
-                            }">
-                            {{ step }}
-                        </div>
-
-                        <span class="text-xs mt-1 text-center"
-                            :class="{ 'text-cyan-400 font-bold': isStepActive(step), 'text-gray-400': !isStepActive(step) }">
-                            {{ stepNames[step - 1] }}
-                        </span>
-                        
-                    </div>
-                    <div v-if="step < 4" class="absolute top-4  h-0.5 z-0 transition-all duration-500" :style="{
-                               left: (step * 31 - 12.5) + '%',
-                               width: '28%',
-                               transform: 'translateX(-50%)',
-                           }" :class="{'bg-green-600': isStepVisited(step), 'bg-gray-700': !isStepVisited(step)}">
-                    </div>
-                </template>
-            </div> -->
+            
         </div>
+        <InlineMessage />
 
         <div
             class="w-full min-h-[70vh]  max-w-6xl mx-auto top-16 pt-4 rounded-2xl bg-gray-800 shadow-2xl p-6 relative ">
+            
 
 
-            <div class="step-content border border-gray-700 rounded-xl min-h-[65vh] pt-4 overflow-y-auto">
+            <div class="step-content rounded-xl min-h-[65vh] pt-4 overflow-y-auto">
                 <Step1BasicInfo v-if="currentStep === 1" :project-data="projectForm" />
                 <Step2DefineAOI v-if="currentStep === 2" :project-data="projectForm" />
                 <Step3AlgoMapping v-if="currentStep === 3" :project-data="projectForm" />

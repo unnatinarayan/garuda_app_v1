@@ -76,10 +76,7 @@ const goToHome = () => {
     }
 };
 
-// const handleLogout = () => {
-//     session.logout();
-//     router.push('/login');
-// };
+
 
 const profileInitials = computed(() => {
     const name = session.username || 'User';
@@ -92,7 +89,7 @@ const profileInitials = computed(() => {
 </script>
 
 <template>
-  <div id="app-wrapper" class="h-screen flex flex-col">
+  <div id="app-wrapper" class="h-screen flex flex-col tw-base">
     
     <div id="splash-screen" class="fixed inset-0 flex flex-col justify-center items-center z-50 transition-opacity duration-500" style="background-color: var(--bg-color);">
         <div class="text-4xl font-extrabold tracking-widest flex items-center space-x-4" style="color: var(--text-color);">
@@ -129,7 +126,7 @@ const profileInitials = computed(() => {
       <RouterView />
     </main>
 
-    <footer class="app-footer flex-shrink-0 bg-gray-900 h-8 flex items-center justify-center">
+    <footer class="app-footer flex-shrink-0 bg-gray-700 h-8 flex items-center justify-center">
       <h1 class="text-center text-xs font-bold text-white">Copyright &copy; 2025 VEDAS SAC ISRO</h1>
     </footer>
   </div>
@@ -157,7 +154,6 @@ body {
 }
 
 .app-footer {
-    background-color: #111827;
     padding: 0;
 }
 

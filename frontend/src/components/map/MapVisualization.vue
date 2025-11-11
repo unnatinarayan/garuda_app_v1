@@ -10,9 +10,12 @@
 import { onMounted, ref, nextTick, watch, onBeforeUnmount } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import 'leaflet.fullscreen';
+import 'leaflet.fullscreen/Control.FullScreen.css';
 import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet.gridlayer.googlemutant';
+
 
 const props = defineProps({
     aoisToDisplay: Array,
@@ -43,6 +46,19 @@ const initializeMap = () => {
     }
 
     map.value = L.map(mapDiv.value);
+   if (L.Control.Fullscreen) {
+    map.value.addControl(new L.Control.Fullscreen({
+        position: 'topleft',
+        title: {
+            'false': 'Enter Fullscreen',
+            'true': 'Exit Fullscreen'
+        }
+    }));
+}
+
+    map.value.on('fullscreenchange', () => {
+        setTimeout(() => map.value.invalidateSize(), 200);
+    });
 
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
@@ -65,6 +81,9 @@ const initializeMap = () => {
 
     if (props.aoisToDisplay && props.aoisToDisplay.length > 0) {
         loadExistingAOIs(props.aoisToDisplay, true);
+        setTimeout(() => {
+  if (map.value) map.value.invalidateSize();
+}, 50);
     } else {
         map.value.setView([21.5937, 80.9629], 5);
     }
@@ -94,6 +113,7 @@ const setupDrawingControls = () => {
     });
 
     map.value.addControl(drawControl);
+    
 
     map.value.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
@@ -200,11 +220,27 @@ const clearUnsavedLayer = () => {
 
 defineExpose({
     clearUnsavedLayer,
-    drawnItems
+    drawnItems,
+    map
 });
 
+
+// onMounted(() => {
+//     nextTick(initializeMap);
+// });
+
 onMounted(() => {
-    nextTick(initializeMap);
+  nextTick(() => {
+    initializeMap();
+
+    setTimeout(() => {
+        initializeMap();
+            if (map.value) map.value.invalidateSize();
+        }, 10);
+
+    // CRITICAL FIX: Recalculate map whenever window resizes
+    
+  });
 });
 
 onBeforeUnmount(() => {
@@ -217,6 +253,7 @@ onBeforeUnmount(() => {
 watch(() => props.aoisToDisplay, (newAois) => {
     if (map.value && newAois) {
         loadExistingAOIs(newAois, false);
+        initializeMap();
     }
 }, { deep: true, immediate: true });
 
@@ -226,24 +263,18 @@ watch(() => props.aoisToDisplay?.length, (newLength, oldLength) => {
         loadExistingAOIs(props.aoisToDisplay, shouldFit);
     }
 });
+
+
 </script>
 
 <style scoped>
-.map-container {
-    min-height: 0; /* Critical for flex child */
-}
+
 
 .map-view {
-    height: 100%;
-    min-height: 200px;
+    min-height: 50vh;
+    
 }
 
-/* Mobile optimization */
-@media (max-width: 640px) {
-    .map-view {
-        min-height: 300px;
-    }
-}
 
 :global(.leaflet-draw-toolbar a) {
     background-color: #ffffff !important;
@@ -252,5 +283,19 @@ watch(() => props.aoisToDisplay?.length, (newLength, oldLength) => {
 
 :global(.leaflet-draw-toolbar a:hover) {
     background-color: #4b5563 !important;
+}
+
+:global(.leaflet-control-container) {
+    z-index: 9999 !important;
+}
+
+/* fullscreen container layout fix */
+:global(.leaflet-container:fullscreen) {
+    background: #000;
+}
+
+/* Chrome & Safari fullscreen */
+:global(.leaflet-container:-webkit-full-screen) {
+    background: #000;
 }
 </style>

@@ -111,7 +111,8 @@ onBeforeUnmount(() => {
         <button 
             @click="toggleDropdown"
             title="Profile Menu"
-            class="cursor-pointer w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs hover:bg-cyan-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+            class="profile cursor-pointer h-8 w-8 bg-white rounded-full flex items-center justify-center text-white font-semibold text-xs hover:bg-cyan-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+            style="background-color: #3b82f6;">
             {{ profileInitials }}
         </button>
 
@@ -295,5 +296,9 @@ onBeforeUnmount(() => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
+}
+.profile{
+    border-radius: 100%;
+    height: ;
 }
 </style>
