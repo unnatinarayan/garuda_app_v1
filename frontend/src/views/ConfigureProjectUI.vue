@@ -137,7 +137,7 @@ const progressWidth = computed(() => {
 
         
 
-        <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[100]">
+        <div class="fixed top-16 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[8]">
             <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
 
                 <button

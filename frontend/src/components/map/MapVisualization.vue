@@ -2,7 +2,7 @@
 
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-lg shadow-inner">
-        <div id="map" class="map-view flex-grow" ref="mapDiv"></div>
+        <div id="map" class="map-view flex-grow z-[60]" ref="mapDiv"></div>
     </div>
 </template>
 
@@ -48,7 +48,7 @@ const initializeMap = () => {
     map.value = L.map(mapDiv.value);
    if (L.Control.Fullscreen) {
     map.value.addControl(new L.Control.Fullscreen({
-        position: 'topleft',
+        position: 'bottomleft',
         title: {
             'false': 'Enter Fullscreen',
             'true': 'Exit Fullscreen'
@@ -286,7 +286,7 @@ watch(() => props.aoisToDisplay?.length, (newLength, oldLength) => {
 }
 
 :global(.leaflet-control-container) {
-    z-index: 9999 !important;
+    z-index: 9 !important;
 }
 
 /* fullscreen container layout fix */

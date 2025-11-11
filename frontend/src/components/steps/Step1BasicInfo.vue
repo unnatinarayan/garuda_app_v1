@@ -37,11 +37,11 @@ const removeAuxData = (key) => {
     
     <div class="form-group mb-4">
       <label class="text-gray-400">Project Name:</label>
-      <input type="text" v-model="projectStore.projectName" required class="w-full p-2 bg-gray-700 text-white mx-1 rounded border border-gray-600 focus:border-cyan-500" />
+      <input type="text" v-model="projectStore.projectName" required class="w-full p-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500" />
     </div>
     <div class="form-group mb-4">
       <label class="text-gray-400">Description:</label>
-      <textarea v-model="projectStore.description" rows="3" class="w-full p-2 bg-gray-700 text-white rounded border mx-1 border-gray-600 focus:border-cyan-500"></textarea>
+      <textarea v-model="projectStore.description" rows="3" class="w-full p-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500"></textarea>
     </div>
 
     <!-- <h4 class="text-lg font-semibold text-cyan-400 mt-6 mb-3">Custom Auxiliary Data (JSONB)</h4> -->

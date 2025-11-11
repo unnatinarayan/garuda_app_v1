@@ -113,7 +113,7 @@ const formatMessage = (msg) => {
 </script>
 
 <template>
-    <div class="notification-container relative inline-block">
+    <div class="notification-container z-[200] relative inline-block">
 
         <button @click="toggleDropdown" class="relative transition-colors duration-200 p-2 rounded-full"
             :class="{ 'text-white': totalAlerts > 0, 'text-gray-400': totalAlerts === 0 }" title="View Notifications"
@@ -131,7 +131,7 @@ const formatMessage = (msg) => {
             </span>
         </button>
 
-        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[1000000] ring-1 ring-black ring-opacity-5 
+        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[300] ring-1 ring-black ring-opacity-5 
                     w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]">
             <div class="p-3 border-b border-gray-600">
                 <h3 class="text-lg font-semibold text-white">Alerts</h3>

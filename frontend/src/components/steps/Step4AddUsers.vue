@@ -71,7 +71,7 @@ watch(newUser, (val) => {
         <input 
             type="text" 
             v-model="newUser" 
-            placeholder="User ID / Email" 
+            placeholder="Enter User ID" 
             class="w-full sm:flex-grow p-3 bg-gray-600 text-white rounded border border-gray-500 focus:border-cyan-400"
         />
         <p v-if="userError" class="text-red-400 text-sm mt-1">{{ userError }}</p>

@@ -1,11 +1,6 @@
 <!-- Step3AlgoMapping.vue  -->
 
 
-
-
-
-
-
 <script setup>
 import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { onMounted, ref, watch, computed } from 'vue';
@@ -165,7 +160,7 @@ onMounted(async () => {
                     label-key="name"
                     placeholder="Click to select an AOI"
                 />
-                <p v-if="selectedAOI" class="text-sm text-gray-500 mt-1">Configure algorithms for AOI: <span class="text-white">{{ selectedAOI.name }}</span></p>
+                <!-- <p v-if="selectedAOI" class="text-sm text-gray-500 mt-1">Configure algorithms for AOI: <span class="text-white">{{ selectedAOI.name }}</span></p> -->
             </div>
 
             <div v-if="selectedAOI" >

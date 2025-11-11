@@ -1,8 +1,6 @@
 // AuthController.js
-
 import { Router } from 'express';
 import { UserModel } from '../models/UserModel.js'; // <-- Updated import
-
 /**
  * AuthController: Handles user login and signup using the database.
  */

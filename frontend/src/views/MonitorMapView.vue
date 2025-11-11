@@ -90,7 +90,7 @@ const refetchAlerts = async (projectId, fromDate, toDate) => {
 
     <!-- Main Content -->
     <div v-else-if="project" class="flex-grow relative min-h-0">
-      <div class="absolute inset-0">
+      <div class="absolute inset-0 z-[30]">
         <MapVisualization 
           :key="mapKey"
           :aois-to-display="project.aois" 
