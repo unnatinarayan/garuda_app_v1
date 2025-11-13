@@ -112,15 +112,15 @@ const formatMessage = (msg) => {
 
 </script>
 
-<template>
+<template class="z-[20000] !important">
     <div class="notification-container z-[200] relative inline-block">
 
-        <button @click="toggleDropdown" class="relative transition-colors duration-200 p-2 rounded-full"
+        <button @click="toggleDropdown" class="relative transition-colors duration-200 px-2 py-1 z-[2000] rounded-full"
             :class="{ 'text-white': totalAlerts > 0, 'text-gray-400': totalAlerts === 0 }" title="View Notifications"
             style="color: var(--text-muted); background-color: #0f172a;">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            <svg class="w-[4vh] h-[4vh]" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
                 </path>
             </svg>
@@ -131,7 +131,7 @@ const formatMessage = (msg) => {
             </span>
         </button>
 
-        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[300] ring-1 ring-black ring-opacity-5 
+        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[3000] ring-1 ring-black ring-opacity-5 
                     w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]">
             <div class="p-3 border-b border-gray-600">
                 <h3 class="text-lg font-semibold text-white">Alerts</h3>

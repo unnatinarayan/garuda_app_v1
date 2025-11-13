@@ -94,20 +94,20 @@ const profileInitials = computed(() => {
     <div id="splash-screen" class="fixed inset-0 flex flex-col justify-center items-center z-50 transition-opacity duration-500" style="background-color: var(--bg-color);">
         <div class="text-4xl font-extrabold tracking-widest flex items-center space-x-4" style="color: var(--text-color);">
             <div class="h-40 w-40 bg-cyan-100 rounded-full flex items-center justify-center text-white text-3xl">
-              <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-20 w-auto">
+              <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-[7vh] w-auto">
             </div> 
         </div>
         <p class="mt-4 text-sm tracking-wider" style="color: var(--accent-color);"><b>G</b>eospatial <b>Ar</b>ea Monitoring with <b>U</b>nified <b>D</b>ata <b>A</b>nalytics</p>
     </div>
     
-    <div v-if="showNavbar" class="fixed top-0 left-0 right-0 px-4 py-1.5 flex justify-between items-center z-20 shadow-md" style="background-color: var(--container-bg); border-bottom: 1px solid var(--header-border); height: 50px;">        
+    <div v-if="showNavbar" class="w-full px-4 py-1 flex justify-between items-center z-20 shadow-md" style="background-color: var(--container-bg); border-bottom: 1px solid var(--header-border); height: 9vh;">        
         <div class="flex items-center space-x-2 cursor-pointer" @click="goToHome">
-             <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-8 w-auto">
+             <img src="@/assets/garuda.png" alt="Garuda Logo" class="h-[6vh] w-auto">
         </div>
         
         <div class="flex items-center space-x-3">
-            <div class="flex text-gray-400 items-center space-x-2 cursor-pointer" @click="goToHome">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="flex text-gray-400 items-center  cursor-pointer" @click="goToHome">
+                <svg xmlns="http://www.w3.org/2000/svg" width="3vh" height="3vh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                   <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
@@ -116,17 +116,15 @@ const profileInitials = computed(() => {
 
             <ProfileDropdown />
             
-            <!-- <div @click="handleLogout" title="Logout" class="cursor-pointer w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-xs hover:bg-red-500 transition-colors duration-200">
-                {{ profileInitials }}
-            </div> -->
+            
         </div>
     </div>
 
-    <main class="app-content flex-grow overflow-y-auto" :class="{'pt-[50px]': showNavbar}"> 
+    <main class="app-content h-[86vh] flex-grow flex-col overflow-y-auto" :class="{'': showNavbar}"> 
       <RouterView />
     </main>
 
-    <footer class="app-footer flex-shrink-0 bg-gray-700 h-8 flex items-center justify-center">
+    <footer class="app-footer flex-shrink-0 bg-gray-700 h-[4vh] flex items-center justify-center">
       <h1 class="text-center text-xs font-bold text-white">Copyright &copy; 2025 VEDAS SAC ISRO</h1>
     </footer>
   </div>
@@ -165,6 +163,6 @@ body {
 }
 
 .app-content > div {
-    min-height: 100%;
+    /* min-height: 100%; */
 }
 </style>

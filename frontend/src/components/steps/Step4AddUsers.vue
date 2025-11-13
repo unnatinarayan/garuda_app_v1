@@ -131,7 +131,7 @@ watch(newUser, (val) => {
                     {{ user.role.charAt(0).toUpperCase() + user.role.slice(1) }}
                 </span>
             </span>
-            <button v-if="user.userId !== 'current_user_id'" @click="removeUser(user.userId)" 
+            <button v-if="user.userId !== 'current_user_id' && user.role != 'owner'" @click="removeUser(user.userId)" 
                     class="remove-btn bg-red-600 hover:bg-red-700 text-white w-6 h-6 flex items-center justify-center rounded-full transition duration-150 flex-shrink-0"
                     title="Remove User"
             >

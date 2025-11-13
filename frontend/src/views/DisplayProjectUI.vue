@@ -1,7 +1,7 @@
 <!-- DisplayProjectUI.vue  -->
 
 <script setup>
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/ProjectStore.js';
 
@@ -20,10 +20,14 @@ const filterRole = ref('');
 const filterStatus = ref('');
 const filterDate = ref('');
 
-// --- NEW SORTING STATE ---
+// // --- NEW SORTING STATE ---
+// const sortCriteria = ref({
+//     field: 'role', // Default sorting field
+//     direction: 'asc', // 'asc' or 'desc'
+// });
 const sortCriteria = ref({
-    field: 'role', // Default sorting field
-    direction: 'asc', // 'asc' or 'desc'
+  field: 'last_modified_timestamp', // default
+  direction: 'desc', // default: latest first
 });
 
 // Define the role hierarchy mapping for sorting
@@ -50,6 +54,8 @@ const availableStatuses = ['Active', 'Draft', 'Archived'];
 onMounted(async () => {
     isLoading.value = true;
     try {
+        const savedSort = localStorage.getItem('projectSort');
+  if (savedSort) sortCriteria.value = JSON.parse(savedSort);
         await projectStore.fetchUserProjects();
     } catch (error) {
         errorMessage.value = 'Failed to load projects.';
@@ -57,6 +63,11 @@ onMounted(async () => {
         isLoading.value = false;
     }
 });
+
+watch(sortCriteria, (newVal) => {
+  localStorage.setItem('projectSort', JSON.stringify(newVal));
+}, { deep: true });
+
 
 // COMPUTED PROPERTY FOR FILTERING AND SORTING
 const filteredProjects = computed(() => {
@@ -88,25 +99,51 @@ const filteredProjects = computed(() => {
         projects = projects.filter(p => p.role === 'owner' || p.role === 'analyst');
     }
 
-    // 2. Sorting Logic (NEW)
-    const { field, direction } = sortCriteria.value;
 
-    if (field === 'role') {
-        projects.sort((a, b) => {
-            const aRole = ROLE_ORDER[a.role] || 99; // Fallback for undefined roles
-            const bRole = ROLE_ORDER[b.role] || 99;
+    // 2. Sorting Logic (Updated)
+const { field, direction } = sortCriteria.value;
 
-            let comparison = 0;
-            if (aRole > bRole) {
-                comparison = 1;
-            } else if (aRole < bRole) {
-                comparison = -1;
-            }
+projects.sort((a, b) => {
+  let comparison = 0;
 
-            // Apply direction
-            return direction === 'asc' ? comparison : comparison * -1;
-        });
-    }
+  if (field === 'role') {
+    const aRole = ROLE_ORDER[a.role] || 99;
+    const bRole = ROLE_ORDER[b.role] || 99;
+    comparison = aRole - bRole;
+  } 
+  else if (field === 'project_name') {
+    comparison = a.project_name.localeCompare(b.project_name);
+  } 
+  else if (field === 'creation_timestamp') {
+    comparison = new Date(a.creation_timestamp) - new Date(b.creation_timestamp);
+  } 
+  else if (field === 'last_modified_timestamp') {
+    comparison = new Date(a.last_modified_timestamp) - new Date(b.last_modified_timestamp);
+  }
+
+  return direction === 'asc' ? comparison : -comparison;
+});
+
+
+    // // 2. Sorting Logic (NEW)
+    // const { field, direction } = sortCriteria.value;
+
+    // if (field === 'role') {
+    //     projects.sort((a, b) => {
+    //         const aRole = ROLE_ORDER[a.role] || 99; // Fallback for undefined roles
+    //         const bRole = ROLE_ORDER[b.role] || 99;
+
+    //         let comparison = 0;
+    //         if (aRole > bRole) {
+    //             comparison = 1;
+    //         } else if (aRole < bRole) {
+    //             comparison = -1;
+    //         }
+
+    //         // Apply direction
+    //         return direction === 'asc' ? comparison : comparison * -1;
+    //     });
+    // }
 
     return projects;
 });
@@ -137,48 +174,68 @@ const handleDelete = async (projectId, projectName) => {
     }
 };
 
-const goBack = () => {
-    router.push('/');
-};
+
 
 </script>
 
+<template>
+    <div id="manage-view" class="h-[87vh]  text-white flex-col justify-center ">
 
-
-
-
-<template class="min-h-[70vh]">
-    <div id="manage-view" class="min-h-[70vh] bg-gray-900 text-white flex justify-center ">
-
-        <div class="fixed top-13 left-0 right-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[10]">
-            <div class="w-full max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4">
-
-                <button
-                    class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base"
-                    @click="goBack">
-                    <svg class="w-6 h-6 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                   
-                </button>
-
-                <h1 class="text-2xl mr-5 font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
-                </h1>
-
-                
-            </div>
+        <div class=" h-[5vh] w-full p-1 bg-gray-700 shadow-lg flex justify-center items-center border-b border-gray-600 z-[10]">
+            <h1 class="text-[3vh] font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
+            </h1>
         </div>
-        <div class="w-full max-w-4xl mx-auto rounded-2xl bg-gray-800 shadow-2xl p-2 relative">
+        <div class="w-full h-[81vh] max-w-4xl mx-auto rounded-2xl  p-2 relative">
 
             
-            <div class="mt-[4rem]">
-
+            <div>
                 <div class="flex justify-between items-center mb-4 space-x-3">
                     <input type="text" v-model="searchTerm" placeholder="Search Name/Desc..."
                         class="w-full p-2 rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150">
-                    <button @click="toggleSort"
+
+
+                    <div class="flex items-center space-x-3">
+  <select
+    v-model="sortCriteria.field"
+    class="p-2 rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150"
+  >
+    <option value="role">Sort by Role</option>
+    <option value="project_name">Sort by Name</option>
+    <option value="creation_timestamp">Sort by Creation Date</option>
+    <option value="last_modified_timestamp">Sort by Last Modified</option>
+  </select>
+
+  <button
+    @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
+    class="p-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
+    :title="`Sorting: ${sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending'}`"
+  >
+    <svg
+      class="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        v-if="sortCriteria.direction === 'asc'"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M5 15l7-7 7 7"
+      ></path>
+      <path
+        v-else
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M19 9l-7 7-7-7"
+      ></path>
+    </svg>
+  </button>
+</div>
+
+                    <!-- <button @click="toggleSort"
                         class="ml-3 p-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
                         :title="`Sort by Role: ${sortCriteria.direction === 'asc' ? 'Owner first (Asc)' : 'Viewer first (Desc)'}`">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -189,7 +246,7 @@ const goBack = () => {
                                 d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"
                                 style="transform: rotate(180deg); transform-origin: center;"></path>
                         </svg>
-                    </button>
+                    </button> -->
 
                 </div>
 

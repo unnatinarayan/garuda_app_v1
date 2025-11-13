@@ -17,7 +17,7 @@
   -moz-osx-font-smoothing: grayscale;
   /* DEFAULT (Light Theme) */
     --bg-color: #0f172a;
-    --container-bg: #0f172a; /* Slate 900 */
+    /* --container-bg: #0f172a; Slate 900 */
     --text-color: #e5e7eb; /* Gray 200 */
     --text-muted: #9ca3af; /* Gray 400 */
     --header-border: #1f2937; /* Gray 800 */
@@ -64,10 +64,7 @@ h1 {
 }
 
 /* Base card and input styles using CSS variables */
-.app-card {
-    background-color: var(--container-bg);
-    border: 1px solid var(--header-border);
-}
+
 .app-card-item {
     background-color: var(--card-bg);
     color: var(--text-color);
@@ -90,9 +87,7 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
-}
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -115,8 +110,5 @@ button:focus-visible {
   a:hover {
     color: #747bff;
   }
-  button {
-    background-color: #1e7cff00;
-    
-  }
+  
 }

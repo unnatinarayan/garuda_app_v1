@@ -2,28 +2,24 @@
 
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-lg shadow-inner relative">
-        <div id="map" class="map-view flex-grow z-[60]" ref="mapDiv"></div>
-        
+        <div id="map" class="map-view flex-grow z-[0]" ref="mapDiv"></div>
+
         <!-- Fullscreen Toggle Button -->
-        <button 
-            v-if="!isFullscreen"
-            @click="enterFullscreen"
-            class="fullscreen-btn absolute top-4 right-4 z-[70] bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
-            title="Enter Fullscreen"
-        >
+        <button v-if="!isFullscreen" @click="enterFullscreen"
+            class="fullscreen-btn absolute bottom-4 right-4 z-[70] bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
+            title="Enter Fullscreen">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4">
+                </path>
             </svg>
             <span class="text-sm font-medium">Fullscreen</span>
         </button>
-        
+
         <!-- Exit Fullscreen Button -->
-        <button 
-            v-if="isFullscreen"
-            @click="exitFullscreen"
-            class="exit-fullscreen-btn fixed top-4 right-4 z-[10000] bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
-            title="Exit Fullscreen"
-        >
+        <button v-if="isFullscreen" @click="exitFullscreen"
+            class="exit-fullscreen-btn fixed bottom-4 right-4 z-[10000] bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
+            title="Exit Fullscreen">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -38,6 +34,8 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
 import 'leaflet-draw';
+import * as turf from '@turf/turf';
+
 
 const props = defineProps({
     aoisToDisplay: Array,
@@ -84,7 +82,7 @@ const exitFullscreen = () => {
 
 const handleFullscreenChange = () => {
     isFullscreen.value = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-    
+
     if (map.value) {
         setTimeout(() => {
             map.value.invalidateSize();
@@ -92,88 +90,58 @@ const handleFullscreenChange = () => {
     }
 };
 
-const createBufferPreview = (layer, layerType) => {
-    console.log('Creating buffer preview for:', layerType);
-    
-    // Clear existing buffer preview
+const createBufferPreview = (layer, layerType, bufferDistance = 100) => {
+    console.log('Creating buffer for:', layerType, 'with distance:', bufferDistance);
+
+    // Clear previous buffer layers
     if (bufferPreviewGroup.value) {
         bufferPreviewGroup.value.clearLayers();
     }
 
-    // Only create preview for Point and LineString
-    if (layerType !== 'marker' && layerType !== 'polyline') {
-        console.log('Not a marker or polyline, skipping buffer preview');
-        return;
-    }
-
-    // Default buffer distance for preview (100 meters)
-    const bufferDistance = 100;
-    
     try {
         if (layerType === 'marker') {
+            // ======== POINT BUFFER ========
             const latlng = layer.getLatLng();
-            console.log('Creating circle buffer at:', latlng, 'with radius:', bufferDistance);
-            
-            // Create a visible circle with the buffer distance
             const circle = L.circle(latlng, {
-                radius: bufferDistance,
-                color: '#fbbf24',
-                fillColor: '#fbbf24',
-                fillOpacity: 0.3,
-                weight: 3,
-                dashArray: '10, 5',
-                interactive: false,
-                pane: 'overlayPane'
-            });
-            
-            bufferPreviewGroup.value.addLayer(circle);
-            
-            // Add a popup to show it's working
-            circle.bindPopup(`<strong>Buffer Preview</strong><br/>Radius: ${bufferDistance}m`);
-            
-            console.log('Circle buffer added to map');
-            
+                radius: bufferDistance, // meters
+                color: '#00BFFF',
+                fillColor: '#3399ff',
+                fillOpacity: 0.3
+            }).addTo(bufferPreviewGroup.value);
+
+            console.log('Circle buffer added around point:', latlng);
+            map.value.fitBounds(circle.getBounds());
+
         } else if (layerType === 'polyline') {
+            // ======== LINE BUFFER ========
             const latlngs = layer.getLatLngs();
-            console.log('Creating line buffer for points:', latlngs.length);
-            
-            // Simplified approach: Create circles at each vertex and connect them
-            latlngs.forEach((latlng, index) => {
-                const circle = L.circle(latlng, {
-                    radius: bufferDistance,
-                    color: '#fbbf24',
-                    fillColor: '#fbbf24',
-                    fillOpacity: 0.2,
-                    weight: 3,
-                    dashArray: '10, 5',
-                    interactive: false,
-                    pane: 'overlayPane'
-                });
-                
-                bufferPreviewGroup.value.addLayer(circle);
-            });
-            
-            // Add a thicker version of the line itself
-            const thickLine = L.polyline(latlngs, {
-                color: '#fbbf24',
-                weight: 20,
-                opacity: 0.3,
-                interactive: false,
-                pane: 'overlayPane'
-            });
-            
-            bufferPreviewGroup.value.addLayer(thickLine);
-            
-            console.log('Line buffer added to map');
+
+            // Convert to GeoJSON LineString (lng, lat order)
+            const lineCoords = latlngs.map(p => [p.lng, p.lat]);
+            const line = turf.lineString(lineCoords);
+
+            const buffered = turf.buffer(line, bufferDistance, { units: 'meters' });
+
+            // Add buffer polygon layer
+            const bufferLayer = L.geoJSON(buffered, {
+                style: {
+                    color: '#00BFFF',
+                    weight: 2,
+                    fillColor: '#3399ff',
+                    fillOpacity: 0.3
+                }
+            }).addTo(bufferPreviewGroup.value);
+
+            console.log('Buffer polygon added for line.');
+            map.value.fitBounds(bufferLayer.getBounds());
         }
-        
-        // Force map to update
-        map.value.invalidateSize();
-        
-    } catch (error) {
-        console.error('Error creating buffer preview:', error);
+    } catch (err) {
+        console.error('Error creating buffer preview:', err);
     }
+
+    map.value.invalidateSize();
 };
+
 
 const initializeMap = () => {
     if (!mapDiv.value) return;
@@ -183,10 +151,13 @@ const initializeMap = () => {
         map.value = null;
     }
 
-    map.value = L.map(mapDiv.value);
+    map.value = L.map(mapDiv.value, {
+        attributionControl: false
+    });
 
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
+        attribution: false,
+
         maxZoom: 19
     });
 
@@ -203,7 +174,7 @@ const initializeMap = () => {
 
     // Buffer preview on TOP so it's always visible
     bufferPreviewGroup.value = new L.FeatureGroup();
-    bufferPreviewGroup.value.setZIndex(100000);
+    bufferPreviewGroup.value.setZIndex(10);
     map.value.addLayer(bufferPreviewGroup.value);
 
     if (!props.isMonitorMode) {
@@ -226,7 +197,7 @@ const setupDrawingControls = () => {
     safePatch(L.Draw.Polygon);
     safePatch(L.Draw.Polyline);
     safePatch(L.Draw.Marker);
-    safePatch(L.Draw.Circle);
+
 
     const drawControl = new L.Control.Draw({
         edit: {
@@ -238,8 +209,11 @@ const setupDrawingControls = () => {
             polygon: true,
             polyline: true,
             marker: true,
-            circle: false,
             rectangle: false,
+            circle: false,
+            circlemarker: false
+            
+
         }
     });
 
@@ -257,12 +231,12 @@ const setupDrawingControls = () => {
     map.value.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
         const layerType = e.layerType;
-        
+
         console.log('Draw created:', layerType);
-        
+
         // Add to drawn items first
         drawnItems.value.addLayer(layer);
-        
+
         // Create buffer preview AFTER adding to map
         setTimeout(() => {
             createBufferPreview(layer, layerType);
@@ -287,6 +261,7 @@ const setupDrawingControls = () => {
         const aoiData = {
             geometry: geoJsonFeature.geometry,
             geometryType: geometryType,
+            coordinates: geoJsonFeature.geometry.coordinates,
         };
 
         emit('aoi-drawn', aoiData);
@@ -300,6 +275,9 @@ const loadExistingAOIs = (aois, shouldFitBounds = false) => {
 
     if (!aois || aois.length === 0) return;
 
+    
+
+
     const aoiLayers = aois.map(aoi => {
         const layer = L.geoJSON(aoi.geomGeoJson || aoi.geometry, {
             style: {
@@ -311,7 +289,7 @@ const loadExistingAOIs = (aois, shouldFitBounds = false) => {
             },
             onEachFeature: (feature, layer) => {
                 layer.options.aoiDetails = aoi;
-                
+
                 layer.bindTooltip(`AOI: ${aoi.name} (${aoi.mappedAlgorithms?.length || 0} Algos)`, {
                     permanent: false,
                     direction: 'top'
@@ -323,6 +301,23 @@ const loadExistingAOIs = (aois, shouldFitBounds = false) => {
                         map.value.setView(e.latlng, map.value.getZoom());
                     });
                 }
+                if (aoi.bufferDistance && aoi.geometryType !== 'Polygon') {
+        if (aoi.geometryType === 'Point') {
+            const [lng, lat] = aoi.geometry.coordinates;
+            console.log(lat);
+            L.circle([lat, lng], {
+                radius: aoi.bufferDistance,
+                color: '#00BFFF',
+                fillColor: '#3399ff',
+                fillOpacity: 0.3
+            }).addTo(savedAoisLayerGroup.value);
+        } else if (aoi.geometryType === 'LineString') {
+            const buffered = turf.buffer(aoi.geometry, aoi.bufferDistance, { units: 'meters' });
+            L.geoJSON(buffered, {
+                style: { color: '#00BFFF', weight: 2, fillColor: '#3399ff', fillOpacity: 0.3 }
+            }).addTo(savedAoisLayerGroup.value);
+        }
+    }
             }
         });
         return layer;
@@ -395,7 +390,7 @@ onBeforeUnmount(() => {
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.removeEventListener('msfullscreenchange', handleFullscreenChange);
-    
+
     if (map.value) {
         map.value.remove();
         map.value = null;
@@ -469,7 +464,5 @@ watch(() => props.aoisToDisplay?.length, (newLength, oldLength) => {
 }
 
 /* Enhanced visibility for buffer preview */
-:global(.leaflet-overlay-pane svg) {
-    z-index: 40000 !important;
-}
+
 </style>

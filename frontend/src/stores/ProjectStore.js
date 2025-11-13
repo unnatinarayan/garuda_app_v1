@@ -147,6 +147,7 @@ export const useProjectStore = defineStore('project', () => {
             const projects = await api.getProjects();
             // --- ADD DEBUG LOGGING ---
             console.log(`[ProjectStore] Fetched ${projects.length} projects.`);
+
             // -------------------------
             userProjects.value = projects;
         } catch (error) {
