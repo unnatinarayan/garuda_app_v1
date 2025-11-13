@@ -134,9 +134,9 @@ const progressWidth = computed(() => {
 <template>
 
     <div class="w-full h-[12vh] p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[8]">
-        <div class="w-full h-[4vh] max-w-6xl mx-auto flex justify-center items-center">
+        <div class="w-full h-[4vh] max-w-6xl mx-auto flex justify-between items-center">
 
-            <!-- <button v-if="currentStep != 1"
+            <button v-if="currentStep != 1"
                 class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base"
                 @click="goBack">
                 <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
@@ -147,7 +147,7 @@ const progressWidth = computed(() => {
             </button>
             <button v-else
                 class="text-cyan-400 ml-4 hover:text-cyan-300 transition duration-150 py-1 px-3 w-5 rounded flex items-center text-sm sm:text-base">
-            </button> -->
+            </button>
 
 
             <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
@@ -155,7 +155,7 @@ const progressWidth = computed(() => {
                 <span v-if="projectName && isUpdateMode" class="text-cyan-400">{{ projectName }}</span>
             </h1>
 
-            <!-- <button v-if="!isFinalStep" @click="nextStep"
+            <button v-if="!isFinalStep" @click="nextStep"
                 class="px-3 py-1 text-cyan-400 rounded-lg font-semibold transition duration-150 text-sm">
                 <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block ml-1" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -168,7 +168,7 @@ const progressWidth = computed(() => {
                 :disabled="!projectName || projectForm.aoiDrafts.length === 0"
                 :class="{ 'opacity-50 cursor-not-allowed': !projectName || projectForm.aoiDrafts.length === 0 }">
                 {{ isUpdateMode ? 'UPDATE' : 'SUBMIT' }}
-            </button> -->
+            </button>
         </div>
 
 
@@ -248,7 +248,8 @@ const progressWidth = computed(() => {
                 Previous Step
             </button>
             <button v-else
-                class="text-cyan-400 ml-4 hover:text-cyan-300 transition duration-150 py-1 px-3 w-5 rounded flex items-center text-sm sm:text-base"></button>
+                class="text-cyan-400 ml-4 hover:text-cyan-300 transition duration-150 py-1 px-3 w-5 rounded flex items-center text-sm sm:text-base">
+            </button>
 
 
 

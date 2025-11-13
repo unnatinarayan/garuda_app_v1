@@ -98,21 +98,25 @@ export class ProjectController {
      * GET /api/projects/:id/alerts
      * Fetches all alerts for a project, enriched with names.
      */
-    getProjectAlerts = async (req, res) => {
-        const projectId = parseInt(req.params.id);
-        const { fromDate, toDate } = req.query; // Capture date filters
+    // --- UPDATE getProjectAlerts in ProjectController.js ---
 
-        if (isNaN(projectId)) {
-             return res.status(400).json({ message: 'Invalid Project ID format.' });
-        }
-        try {
-            const alerts = await this.projectService.getProjectAlerts(projectId, fromDate, toDate);
-            return res.status(200).json(alerts);
-        } catch (error) {
-            console.error('Controller Error fetching project alerts:', error);
-            return res.status(500).json({ error: 'Failed to fetch project alerts.', details: error.message });
-        }
+getProjectAlerts = async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const aoiId = req.query.aoiId ? parseInt(req.query.aoiId) : null;
+
+    if (isNaN(projectId)) {
+        return res.status(400).json({ message: 'Invalid Project ID format.' });
     }
+
+    try {
+        const { alerts, timeRange } = await this.projectService.getProjectAlerts(projectId, aoiId);
+        return res.status(200).json({ alerts, timeRange });
+    } catch (error) {
+        console.error('Controller Error fetching project alerts:', error);
+        return res.status(500).json({ error: 'Failed to fetch project alerts.', details: error.message });
+    }
+};
+
 
 
 

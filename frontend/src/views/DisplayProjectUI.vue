@@ -5,6 +5,17 @@ import { onMounted, ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/ProjectStore.js';
 
+// import DropdownSelect from '@/components/common/CustomSelect.vue';
+import CustomSelect from '../components/common/CustomSelect.vue';
+
+const sortOptions = [
+    { label: 'Sort by Role', value: 'role' },
+    { label: 'Sort by Name', value: 'project_name' },
+    { label: 'Sort by Creation Date', value: 'creation_timestamp' },
+    { label: 'Sort by Last Modified', value: 'last_modified_timestamp' },
+];
+
+
 const router = useRouter();
 const route = useRoute();
 const projectStore = useProjectStore();
@@ -26,8 +37,8 @@ const filterDate = ref('');
 //     direction: 'asc', // 'asc' or 'desc'
 // });
 const sortCriteria = ref({
-  field: 'last_modified_timestamp', // default
-  direction: 'desc', // default: latest first
+    field: 'last_modified_timestamp', // default
+    direction: 'desc', // default: latest first
 });
 
 // Define the role hierarchy mapping for sorting
@@ -37,25 +48,13 @@ const ROLE_ORDER = {
     'viewer': 3,
 };
 
-/**
- * Toggles the sorting direction for the 'role' field.
- */
-const toggleSort = () => {
-    const currentDir = sortCriteria.value.direction;
-    sortCriteria.value.field = 'role'; // Ensure role is the field
-    sortCriteria.value.direction = currentDir === 'asc' ? 'desc' : 'asc';
-};
-// --- END NEW SORTING STATE ---
 
-// Available filter options (derived from store data or mock)
-const availableRoles = ['owner', 'analyst', 'viewer'];
-const availableStatuses = ['Active', 'Draft', 'Archived'];
 
 onMounted(async () => {
     isLoading.value = true;
     try {
         const savedSort = localStorage.getItem('projectSort');
-  if (savedSort) sortCriteria.value = JSON.parse(savedSort);
+        if (savedSort) sortCriteria.value = JSON.parse(savedSort);
         await projectStore.fetchUserProjects();
     } catch (error) {
         errorMessage.value = 'Failed to load projects.';
@@ -65,7 +64,7 @@ onMounted(async () => {
 });
 
 watch(sortCriteria, (newVal) => {
-  localStorage.setItem('projectSort', JSON.stringify(newVal));
+    localStorage.setItem('projectSort', JSON.stringify(newVal));
 }, { deep: true });
 
 
@@ -101,49 +100,29 @@ const filteredProjects = computed(() => {
 
 
     // 2. Sorting Logic (Updated)
-const { field, direction } = sortCriteria.value;
+    const { field, direction } = sortCriteria.value;
 
-projects.sort((a, b) => {
-  let comparison = 0;
+    projects.sort((a, b) => {
+        let comparison = 0;
 
-  if (field === 'role') {
-    const aRole = ROLE_ORDER[a.role] || 99;
-    const bRole = ROLE_ORDER[b.role] || 99;
-    comparison = aRole - bRole;
-  } 
-  else if (field === 'project_name') {
-    comparison = a.project_name.localeCompare(b.project_name);
-  } 
-  else if (field === 'creation_timestamp') {
-    comparison = new Date(a.creation_timestamp) - new Date(b.creation_timestamp);
-  } 
-  else if (field === 'last_modified_timestamp') {
-    comparison = new Date(a.last_modified_timestamp) - new Date(b.last_modified_timestamp);
-  }
+        if (field === 'role') {
+            const aRole = ROLE_ORDER[a.role] || 99;
+            const bRole = ROLE_ORDER[b.role] || 99;
+            comparison = aRole - bRole;
+        }
+        else if (field === 'project_name') {
+            comparison = a.project_name.localeCompare(b.project_name);
+        }
+        else if (field === 'creation_timestamp') {
+            comparison = new Date(a.creation_timestamp) - new Date(b.creation_timestamp);
+        }
+        else if (field === 'last_modified_timestamp') {
+            comparison = new Date(a.last_modified_timestamp) - new Date(b.last_modified_timestamp);
+        }
 
-  return direction === 'asc' ? comparison : -comparison;
-});
+        return direction === 'asc' ? comparison : -comparison;
+    });
 
-
-    // // 2. Sorting Logic (NEW)
-    // const { field, direction } = sortCriteria.value;
-
-    // if (field === 'role') {
-    //     projects.sort((a, b) => {
-    //         const aRole = ROLE_ORDER[a.role] || 99; // Fallback for undefined roles
-    //         const bRole = ROLE_ORDER[b.role] || 99;
-
-    //         let comparison = 0;
-    //         if (aRole > bRole) {
-    //             comparison = 1;
-    //         } else if (aRole < bRole) {
-    //             comparison = -1;
-    //         }
-
-    //         // Apply direction
-    //         return direction === 'asc' ? comparison : comparison * -1;
-    //     });
-    // }
 
     return projects;
 });
@@ -179,93 +158,60 @@ const handleDelete = async (projectId, projectName) => {
 </script>
 
 <template>
-    <div id="manage-view" class="h-[87vh]  text-white flex-col justify-center ">
+    <div id="manage-view" class="h-[85vh] mb-2  text-white flex-col justify-center ">
 
-        <div class=" h-[5vh] w-full p-1 bg-gray-700 shadow-lg flex justify-center items-center border-b border-gray-600 z-[10]">
+        <div
+            class=" h-[5vh] w-full p-1 bg-gray-700 shadow-lg flex justify-center items-center border-b border-gray-600">
             <h1 class="text-[3vh] font-bold text-white">{{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
             </h1>
         </div>
-        <div class="w-full h-[81vh] max-w-4xl mx-auto rounded-2xl  p-2 relative">
+        <div class="w-full h-[80vh] max-w-4xl mx-auto rounded-2xl  p-2 relative">
 
-            
             <div>
-                <div class="flex justify-between items-center mb-4 space-x-3">
+                <div class="flex flex-wrap h-[10vh] justify-between items-center mb-[2vh] gap-2">
                     <input type="text" v-model="searchTerm" placeholder="Search Name/Desc..."
-                        class="w-full p-2 rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150">
+                        class="flex-1 min-w-[200px] p-2 h-[4vh] rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150" />
+
+                    <div class="flex flex-row w-full justify-end h-[5vh] gap-2">
+                        <CustomSelect v-model="sortCriteria.field" :options="sortOptions" label-key="label"
+                            value-key="value" placeholder="Sort by..." class="min-w-[160px] h-[4vh] sm:w-auto" />
 
 
-                    <div class="flex items-center space-x-3">
-  <select
-    v-model="sortCriteria.field"
-    class="p-2 rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150"
-  >
-    <option value="role">Sort by Role</option>
-    <option value="project_name">Sort by Name</option>
-    <option value="creation_timestamp">Sort by Creation Date</option>
-    <option value="last_modified_timestamp">Sort by Last Modified</option>
-  </select>
-
-  <button
-    @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
-    class="p-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
-    :title="`Sorting: ${sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending'}`"
-  >
-    <svg
-      class="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        v-if="sortCriteria.direction === 'asc'"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M5 15l7-7 7 7"
-      ></path>
-      <path
-        v-else
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M19 9l-7 7-7-7"
-      ></path>
-    </svg>
-  </button>
-</div>
-
-                    <!-- <button @click="toggleSort"
-                        class="ml-3 p-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
-                        :title="`Sort by Role: ${sortCriteria.direction === 'asc' ? 'Owner first (Asc)' : 'Viewer first (Desc)'}`">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path v-if="sortCriteria.direction === 'asc'" stroke-linecap="round" stroke-linejoin="round"
-                                stroke-width="2" d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"></path>
-                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"
-                                style="transform: rotate(180deg); transform-origin: center;"></path>
-                        </svg>
-                    </button> -->
-
+                        <button @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
+                            class="p-1 h-[4vh] w-[4vh] bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
+                            :title="`Sorting: ${sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending'}`">
+                            <svg class="w-[3.5vh] h-[3.5vh]" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path v-if="sortCriteria.direction === 'asc'" stroke-linecap="round"
+                                    stroke-linejoin="round" stroke-width="2"
+                                    d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"></path>
+                                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"
+                                    style="transform: rotate(180deg); transform-origin: center;"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                
-                <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+
+
+                <div class="space-y-4 max-h-[66vh] overflow-y-auto pr-2">
                     <p v-if="isLoading" class="text-center py-8 text-gray-400">Loading projects...</p>
                     <p v-else-if="errorMessage" class="text-center py-8 text-red-500">{{ errorMessage }}</p>
                     <p v-else-if="filteredProjects.length === 0" class="text-center py-8 text-gray-400">No projects
                         match your criteria.</p>
 
                     <div v-for="project in filteredProjects" :key="project.id"
-                        class="flex justify-between items-center p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition duration-150 shadow-md border-l-4 border-cyan-500">
+                        class="flex h-[69] justify-between items-center p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition duration-150 shadow-md border-l-4 border-cyan-500">
                         <div class="flex flex-col">
                             <h3 class="text-xl font-bold text-white">{{ project.project_name }}</h3>
                             <span
                                 class="text-xs font-semibold px-2 py-0.5 mt-1 rounded text-cyan-200 bg-green-700 inline-block">Role:
                                 {{ project.role }}</span>
-                            <p class="text-sm text-gray-400 overflow-hidden whitespace-nowrap 	max-w-[15ch] text-ellipsis">{{ project.description || 'No description.' }}</p>
-                            
+                            <p
+                                class="text-sm text-gray-400 overflow-hidden whitespace-nowrap 	max-w-[15ch] text-ellipsis">
+                                {{ project.description || 'No description.' }}</p>
+
                         </div>
 
                         <div class="flex space-x-2 flex-shrink-0 ml-4">
@@ -337,6 +283,31 @@ const handleDelete = async (projectId, projectName) => {
 .overflow-y-auto::-webkit-scrollbar-track {
     background-color: #1f2937;
 }
+
+
+/* Fix select dropdown floating and clipping */
+
+
+/* Prevent parent containers from clipping dropdowns */
+
+
+/* Make sure select dropdown fits well on mobile */
+select {
+    width: 100%;
+    max-width: 220px;
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    color: white;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* For touch-friendly spacing */
+@media (max-width: 640px) {
+    select {
+        max-width: 100%;
+        font-size: 0.85rem;
+    }
+}
 </style>
-
-

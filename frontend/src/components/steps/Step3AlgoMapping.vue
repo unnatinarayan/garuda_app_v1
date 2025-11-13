@@ -173,7 +173,7 @@ onMounted(async () => {
                     <div 
                         v-for="algo in algorithms" :key="algo.algo_id"
                         class="flex flex-col p-3 rounded-lg border transition duration-150"
-                        :class="{'bg-green-800/20 border-green-500': selectedAlgoIds.includes(algo.algo_id), 'bg-gray-700 border-gray-600 hover:bg-gray-600': !selectedAlgoIds.includes(algo.algo_id)}"
+                        :class="{'bg-green-900/80 border-green-500': selectedAlgoIds.includes(algo.algo_id), 'bg-gray-700 border-gray-600 hover:bg-gray-600': !selectedAlgoIds.includes(algo.algo_id)}"
                     >
                         <div class="flex space-x-3 items-start">
                             

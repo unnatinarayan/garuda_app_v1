@@ -2,10 +2,12 @@
 
 <template>
     <div class="map-container flex flex-col h-full bg-gray-900 rounded-lg shadow-inner relative">
-        <div id="map" class="map-view flex-grow z-[0]" ref="mapDiv"></div>
+        <div id="map"class="map-view flex-grow z-[0]" ref="mapDiv"></div>
+        <!-- <div id="map" v-else class="map-view flex-grow h-[76vh] z-[0]" ref="mapDiv"></div> -->
+
 
         <!-- Fullscreen Toggle Button -->
-        <button v-if="!isFullscreen" @click="enterFullscreen"
+        <button v-if="!isFullscreen && !isMonitorMode" @click="enterFullscreen"
             class="fullscreen-btn absolute bottom-4 right-4 z-[70] bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
             title="Enter Fullscreen">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,7 +19,7 @@
         </button>
 
         <!-- Exit Fullscreen Button -->
-        <button v-if="isFullscreen" @click="exitFullscreen"
+        <button v-if="isFullscreen && !isMonitorMode" @click="exitFullscreen"
             class="exit-fullscreen-btn fixed bottom-4 right-4 z-[10000] bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2"
             title="Exit Fullscreen">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

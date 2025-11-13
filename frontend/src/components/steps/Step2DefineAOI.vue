@@ -286,9 +286,8 @@ const removeAOI = (clientAoiId) => {
                                         <span class="text-white text-sm ml-2">{{ item.value }}</span>
                                     </div>
                                     <button @click="removeAuxField(index)"
-                                            class="text-red-400 hover:text-red-300 font-bold text-xl leading-none"
-                                            title="Remove field">
-                                        &times;
+                                            class="bg-red-500 px-3 py-1.5 text-white rounded-lg text-sm font-semibold transition duration-150"
+                    title="Cancel"> Cancel
                                     </button>
                                 </div>
                             </div>
@@ -325,10 +324,8 @@ const removeAOI = (clientAoiId) => {
                                 <div class="flex justify-end items-center gap-2">
                                     <button 
                                         @click="showNewAuxFields = false; newAuxKey = ''; newAuxValue = '';" 
-                                        class="text-red-400 hover:text-red-500 font-bold p-1 leading-none text-xl transition duration-150" 
-                                        title="Cancel"
-                                    >
-                                        &times;
+                                        class="bg-red-500 px-3 py-1.5 text-white rounded-lg text-sm font-semibold transition duration-150"
+                    title="Cancel"> Cancel
                                     </button>
                                     
                                     <button 

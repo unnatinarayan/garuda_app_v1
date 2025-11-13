@@ -380,49 +380,61 @@ export class ProjectService {
 
 
 
-    async getProjectAlerts(projectId, fromDate, toDate) {
-        let dateFilter = '';
-        const params = [projectId];
-        
-        // Build dynamic date filtering
-        if (fromDate) {
-            params.push(fromDate);
-            dateFilter += ` AND a.alert_timestamp >= $${params.length}::timestamp with time zone`;
-        }
-        if (toDate) {
-            params.push(toDate);
-            dateFilter += ` AND a.alert_timestamp <= $${params.length}::timestamp with time zone`;
-        }
+    // ProjectService.js - Updated getProjectAlerts method
 
-        const query = `
-            SELECT
-                a.id,
-                a.message,
-                a.alert_timestamp as timestamp,
-                p.name as project_name,
-                aoi.name as aoi_name,
-                aam.aoi_id,
-                aam.project_id,
-                aam.change_algo_id as algo_id
-            FROM alerts a
-            JOIN aoi_algorithm_mapping aam ON a.mapping_id = aam.id
-            JOIN project p ON aam.project_id = p.id
-            JOIN area_of_interest aoi ON aam.project_id = aoi.project_id AND aam.aoi_id = aoi.aoi_id
-            WHERE aam.project_id = $1
-            ${dateFilter}
-            ORDER BY a.alert_timestamp DESC;
-        `;
-        
-        const result = await db.query(query, params);
-        
-        return result.rows.map(row => ({
-            ...row,
-            projectId: row.project_id,
-            aoiId: row.aoi_id,
-            algoId: row.algo_id,
-            title: `${row.project_name}: ${row.aoi_name} alerted by ${row.algo_id}`,
-        }));
+
+async getProjectAlerts(projectId, aoiId = null) {
+    let aoiFilter = '';
+    const params = [projectId];
+
+    if (aoiId) {
+        params.push(aoiId);
+        aoiFilter = ` AND aam.aoi_id = $${params.length}`;
     }
+
+    const query = `
+        SELECT
+            a.id,
+            a.message,
+            a.alert_timestamp AS timestamp,
+            p.name AS project_name,
+            aoi.name AS aoi_name,
+            aam.aoi_id,
+            aam.project_id,
+            aam.change_algo_id AS algo_id
+        FROM alerts a
+        JOIN aoi_algorithm_mapping aam ON a.mapping_id = aam.id
+        JOIN project p ON aam.project_id = p.id
+        JOIN area_of_interest aoi ON aam.project_id = aoi.project_id AND aam.aoi_id = aoi.aoi_id
+        WHERE aam.project_id = $1
+        ${aoiFilter}
+        ORDER BY a.alert_timestamp ASC;
+    `;
+
+    const result = await db.query(query, params);
+
+    // Derive first and last timestamps for frontend auto-scaling
+    const timestamps = result.rows.map(r => new Date(r.timestamp).getTime());
+    const firstTimestamp = timestamps.length ? Math.min(...timestamps) : null;
+    const lastTimestamp = timestamps.length ? Math.max(...timestamps) : null;
+
+    return {
+        alerts: result.rows.map(row => ({
+            id: row.id,
+            projectId: row.project_id,
+            projectName: row.project_name,
+            aoiId: row.aoi_id,
+            aoiName: row.aoi_name,
+            algoId: row.algo_id,
+            message: row.message,
+            timestamp: row.timestamp
+        })),
+        timeRange: { from: firstTimestamp, to: lastTimestamp }
+    };
+}
+
+
+    
     
 
     /**

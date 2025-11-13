@@ -1,12 +1,14 @@
+<!-- frontend/src/components/map/AoiVizPanel.vue -->
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Highcharts from 'highcharts';
 
 const props = defineProps({
-    isVisible: Boolean,
-    projectId: [Number, String],
-    allAois: { type: Array, default: () => [] },
-    projectAlerts: { type: Array, default: () => [] },
+  isVisible: Boolean,
+  projectId: [Number, String],
+  allAois: { type: Array, default: () => [] },
+  projectAlerts: { type: Array, default: () => [] },
+  alertTimeRange: { type: Object, default: () => ({ from: null, to: null }) }
 });
 
 const emit = defineEmits(['close', 'refetch-alerts']);
@@ -76,6 +78,7 @@ const availableAlgorithms = computed(() => {
 
 // Process alerts into series data for Highcharts
 const chartSeriesData = computed(() => {
+
     if (!props.projectAlerts || props.projectAlerts.length === 0) {
         return [];
     }
@@ -161,8 +164,12 @@ const chartSeriesData = computed(() => {
 
 // Highcharts configuration
 const chartOptions = computed(() => {
-    const minTime = dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : undefined;
-    const maxTime = dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : undefined;
+    const minTime = props.alertTimeRange?.from - 2 * 60 * 1000 || undefined;
+  const maxTime = props.alertTimeRange?.to + 2 * 60 * 1000 || undefined;
+console.log(minTime);
+console.log(maxTime);
+    // const minTime = dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : undefined;
+    // const maxTime = dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : undefined;
     
     return {
         chart: {
@@ -179,36 +186,32 @@ const chartOptions = computed(() => {
             enabled: false
         },
         xAxis: {
-            type: 'datetime',
-            title: { 
-                text: 'Timeline', 
-                style: { color: '#9ca3af', fontWeight: 'bold' } 
-            },
-            labels: { 
-                style: { color: '#d1d5db' },
-                format: '{value:%e %b %H:%M}'
-            },
-            gridLineColor: '#374151',
-            lineColor: '#4b5563',
-            min: minTime,
-            max: maxTime,
-        },
+      type: 'datetime',
+      min: minTime,
+      max: maxTime,
+      title: {
+        text: 'Timeline',
+        style: { color: '#9ca3af', fontWeight: 'bold' }
+      },
+      labels: { style: { color: '#d1d5db' }, format: '{value:%e %b %H:%M}' },
+      gridLineColor: '#374151'
+    },
         yAxis: {
-            title: { 
-                text: 'Alert Status', 
-                style: { color: '#9ca3af', fontWeight: 'bold' } 
-            },
-            labels: {
-                style: { color: '#d1d5db' },
-                formatter: function() {
-                    return this.value === 1 ? 'Alert' : 'None';
-                }
-            },
-            min: 0,
-            max: 1.5,
-            tickPositions: [0, 1],
-            gridLineColor: '#374151',
-        },
+      title: {
+        text: 'Alert Status',
+        style: { color: '#9ca3af', fontWeight: 'bold' }
+      },
+      labels: {
+        style: { color: '#d1d5db' },
+        formatter: function () {
+          return this.value === 1 ? 'Yes' : 'No';
+        }
+      },
+      min: 0,
+      max: 1.5,
+      tickPositions: [0, 1],
+      gridLineColor: '#374151'
+    },
         tooltip: {
             backgroundColor: '#111827',
             borderColor: '#4b5563',
@@ -279,7 +282,8 @@ const applyFilters = () => {
     
     const from = new Date(dateFilter.value.from).toISOString();
     const to = new Date(dateFilter.value.to).toISOString();
-    emit('refetch-alerts', props.projectId, from, to);
+    emit('refetch-alerts', props.projectId, selectedAoiIds.value);
+
 };
 
 const toggleAoiSelection = (aoiId) => {
@@ -387,6 +391,16 @@ watch(() => props.isVisible, (newVal) => {
     }
 });
 
+watch([selectedAoiIds, selectedAlgoIds], () => {
+  if (props.isVisible) {
+    updateChart();
+  }
+}, { deep: true });
+
+watch([() => props.projectAlerts, () => props.alertTimeRange], () => {
+  if (props.isVisible) updateChart();
+}, { deep: true });
+
 watch([chartSeriesData, () => props.isVisible], () => {
     if (props.isVisible) {
         updateChart();
@@ -408,8 +422,8 @@ watch(uniqueAlgorithms, (newAlgos) => {
 
 <template>
     <div v-if="isVisible" 
-         class="fixed overflow-y-auto bottom-0 left-0 right-0 bg-gray-800 shadow-2xl border-t-4 border-cyan-500 transition-all duration-300 z-[10000]"
-         style="height: 55vh; min-height: 400px;">
+         class="fixed bottom-0 left-0 right-0 bg-gray-800 shadow-2xl border-t-4 border-cyan-500 transition-all duration-300"
+         style="height: 40vh; min-height: 400px;">
         
         <!-- Close Button -->
         <button @click="$emit('close')" 
@@ -422,10 +436,10 @@ watch(uniqueAlgorithms, (newAlgos) => {
         </button>
 
         <!-- Main Content -->
-        <div class="flex flex-col  p-3 overflow-y-auto">
+        <div class="flex flex-col h-[44vh] p-2 overflow-y-auto">
             
             <!-- Controls Section -->
-             <div class="flex-shrink-0 flex-column">
+             <div class="flex-shrink-0 pd-1 h-[5vh] flex-column">
                 <div class="flex justify-between items-center">
                         <label class="text-gray-300 text-sm font-semibold">Select AOIs:</label>
                         
@@ -446,25 +460,11 @@ watch(uniqueAlgorithms, (newAlgos) => {
 
                 
                 <!-- Date Filter Row -->
-                <div class=" flex flex-row-reverse rounded-lg right-0">
-                    <div class="flex flex-row gap-1 items-center">
-                        <input type="date" 
-                               v-model="dateFilter.from" 
-                               class="bg-gray-600 text-white px-1 rounded text-sm">
-                        <span class="text-gray-400">to</span>
-                        <input type="date" 
-                               v-model="dateFilter.to" 
-                               class="bg-gray-600 text-white px-1 rounded text-sm">
-                        <button @click="applyFilters" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded-lg text-sm font-semibold">
-                            Apply
-                        </button>
-                    </div>
-                </div>
+                
             </div>
 
             <!-- Chart Area -->
-            <div class="flex-grow min-h-0  mb-3 bg-gray-900 rounded-lg p-2 relative">
+            <div class="flex-grow min-h-0 h-[29vh] mb-1 bg-gray-900 rounded-lg p-1 relative">
                 <div v-if="isLoadingChart" 
                      class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-10">
                     <div class="text-cyan-400 text-lg">Loading chart...</div>
@@ -472,7 +472,7 @@ watch(uniqueAlgorithms, (newAlgos) => {
                 
                 <div ref="chartElement" 
                      v-show="chartSeriesData.length > 0 && !isLoadingChart"
-                     class="w-full h-[30vh] max-h-2/3">
+                     class="w-full h-full">
                 </div>
                 
                 <div v-if="!isLoadingChart && chartSeriesData.length === 0" 
@@ -494,7 +494,7 @@ watch(uniqueAlgorithms, (newAlgos) => {
             </div>
 
             <!-- Algorithm Legend -->
-            <div class="flex-shrink-0 bg-gray-700 rounded-lg p-1">
+            <div class="flex-shrink-0 bg-gray-700 h-[8vh] mb-3 rounded-lg p-1">
                 <div class="flex justify-between items-center mb-1">
                     <label class="text-gray-300 text-sm font-semibold">Algorithms:</label>
                     <!-- <div class="flex gap-2">

@@ -41,6 +41,7 @@ const startSSE = (userId) => {
     eventSource.value = source;
 };
 
+
 onMounted(() => {
     document.body.classList.add('light'); 
     
@@ -162,7 +163,4 @@ body {
     }
 }
 
-.app-content > div {
-    /* min-height: 100%; */
-}
 </style>

@@ -1,6 +1,6 @@
 <!-- NotificationDropdown.vue -->
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useProjectStore } from '@/stores/ProjectStore.js';
 import { useRouter } from 'vue-router';
 
@@ -8,6 +8,7 @@ const projectStore = useProjectStore();
 const router = useRouter();
 
 // UI State
+const dropdownRef = ref(null);
 const isDropdownOpen = ref(false);
 const expandedAlertIds = ref([]);
 
@@ -15,9 +16,21 @@ const expandedAlertIds = ref([]);
 const alerts = computed(() => projectStore.activeAlerts);
 const totalAlerts = computed(() => projectStore.totalAlerts);
 
+const focusDropdown = () => {
+    nextTick(() => {
+        const dropdownContent = dropdownRef.value?.querySelector('.absolute');
+        if (dropdownContent) {
+            dropdownContent.focus();
+        }
+    });
+};
+
 // Toggle the dropdown visibility
 const toggleDropdown = () => {
     isDropdownOpen.value = !isDropdownOpen.value;
+    if (isDropdownOpen.value) {
+        focusDropdown();
+    }
 };
 
 const toggleExpand = (alertId) => {
@@ -88,32 +101,42 @@ const handleAlertClick = (alert) => {
     }
 };
 const normalizeMessage = (msg) => {
-  if (!msg) return {};
+    if (!msg) return {};
 
-  // If already parsed JSON object
-  if (typeof msg === 'object') return msg;
+    // If already parsed JSON object
+    if (typeof msg === 'object') return msg;
 
-  // If it's a JSON string, try parsing:
-  try {
-    return JSON.parse(msg);
-  } catch {
-    return { message: msg }; // fallback to show raw string
-  }
+    // If it's a JSON string, try parsing:
+    try {
+        return JSON.parse(msg);
+    } catch {
+        return { message: msg }; // fallback to show raw string
+    }
 };
 
 const formatMessage = (msg) => {
-  const data = normalizeMessage(msg);
+    const data = normalizeMessage(msg);
 
-  return Object.entries(data).map(([key, value]) => ({
-    key,
-    value: typeof value === 'object' ? JSON.stringify(value, null, 2) : value
-  }));
+    return Object.entries(data).map(([key, value]) => ({
+        key,
+        value: typeof value === 'object' ? JSON.stringify(value, null, 2) : value
+    }));
+};
+
+const closeOnFocusOut = () => {
+    // A small delay is sometimes needed to check if focus moved to a child element
+    setTimeout(() => {
+        const isFocusInside = dropdownRef.value.contains(document.activeElement);
+        if (!isFocusInside) {
+            isDropdownOpen.value = false;
+        }
+    }, 0);
 };
 
 </script>
 
 <template class="z-[20000] !important">
-    <div class="notification-container z-[200] relative inline-block">
+    <div ref="dropdownRef" class="notification-container z-[200] relative inline-block">
 
         <button @click="toggleDropdown" class="relative transition-colors duration-200 px-2 py-1 z-[2000] rounded-full"
             :class="{ 'text-white': totalAlerts > 0, 'text-gray-400': totalAlerts === 0 }" title="View Notifications"
@@ -131,11 +154,21 @@ const formatMessage = (msg) => {
             </span>
         </button>
 
-        <div v-if="isDropdownOpen" class="absolute mt-3 bg-gray-700 rounded-lg shadow-xl z-[3000] ring-1 ring-black ring-opacity-5 
+        <div v-if="isDropdownOpen" tabindex="-1"
+             @focusout="closeOnFocusOut" class="absolute mt-3 bg-black rounded-lg shadow-xl z-[3000] ring-1 ring-black ring-opacity-5 
                     w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]">
-            <div class="p-3 border-b border-gray-600">
-                <h3 class="text-lg font-semibold text-white">Alerts</h3>
-            </div>
+            <div class="p-3 flex items-center justify-between border-b border-gray-600">
+  
+  <h3 class="text-lg font-semibold text-white flex-grow text-center">
+   Alerts
+  </h3>
+  
+  <div class="p-2 text-xs">
+    <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white text-red-500">
+      Close
+    </a>
+  </div>
+</div>
 
             <div class="max-h-80 overflow-y-auto">
                 <div v-if="totalAlerts === 0" class="p-4 text-gray-400 text-center">
@@ -182,31 +215,26 @@ const formatMessage = (msg) => {
                         </div>
                     </div>
                     <div v-if="expandedAlertIds.includes(alert.id)"
-    class="p-3 pt-0 bg-gray-600/50 text-white border-t border-gray-600">
+                        class="p-3 pt-0 bg-gray-600/50 text-white border-t border-gray-600">
 
-  <p class="text-xs font-semibold mb-1 text-cyan-200">Alert Details:</p>
+                        <p class="text-xs font-semibold mb-1 text-cyan-200">Alert Details:</p>
 
-  <div class="max-h-40 overflow-y-auto space-y-1 p-2 bg-gray-700 rounded">
-    <div
-  v-for="{ key, value } in formatMessage(alert.message)"
-  :key="key"
-  class="text-xs leading-tight"
->
-  <span class="font-semibold text-cyan-300">{{ key }}:</span>
-  <span class="text-gray-200 break-words ml-1">{{ value }}</span>
-</div>
-  </div>
-</div>
+                        <div class="max-h-40 overflow-y-auto space-y-1 p-2 bg-gray-700 rounded">
+                            <div v-for="{ key, value } in formatMessage(alert.message)" :key="key"
+                                class="text-xs leading-tight">
+                                <span class="font-semibold text-cyan-300">{{ key }}:</span>
+                                <span class="text-gray-200 break-words ml-1">{{ value }}</span>
+                            </div>
+                        </div>
+                    </div>
 
 
 
-                    
+
                 </div>
             </div>
 
-            <div class="p-2 text-center text-xs text-gray-400 border-t border-gray-600">
-                <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white">Close</a>
-            </div>
+
         </div>
     </div>
 </template>

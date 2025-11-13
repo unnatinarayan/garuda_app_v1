@@ -20,25 +20,29 @@ const projectAlerts = ref([]);
 const showVizPanel = ref(false);
 const activeAoiDetails = ref(null);
 const mapKey = ref(0);
+const alertTimeRange = ref({ from: null, to: null });
+
 
 onMounted(async () => {
-    try {
-        const data = await apiClient.getProjectDetails(parseInt(props.id));
-        project.value = data;
-        projectAlerts.value = await apiClient.getProjectAlerts(data.id); 
-    } catch (error) {
-        console.error("Error loading project for monitoring:", error);
-        alert('Could not load project for monitoring.');
-        router.push('/');
-    } finally {
-        isLoading.value = false;
-    }
+  try {
+    const data = await apiClient.getProjectDetails(parseInt(props.id));
+    project.value = data;
+    await fetchAlertsForAoi(); // initially load all
+  } catch (error) {
+    console.error("Error loading project for monitoring:", error);
+    router.push('/');
+  } finally {
+    isLoading.value = false;
+  }
 });
 
-const handleAoiClick = (aoi) => {
-    activeAoiDetails.value = aoi;
-    showVizPanel.value = true;
+const handleAoiClick = async (aoi) => {
+  activeAoiDetails.value = aoi;
+  showVizPanel.value = true;
+  await fetchAlertsForAoi(aoi.aoi_id); // Load alerts only for this AOI
 };
+
+
 
 const closeVizPanel = () => {
     showVizPanel.value = false;
@@ -51,23 +55,47 @@ const goBack = () => {
         router.push('/projects/manage?mode=monitor');
 };
 
-const refetchAlerts = async (projectId, fromDate, toDate) => {
-    try {
-        projectAlerts.value = await apiClient.getProjectAlerts(projectId, fromDate, toDate);
-    } catch (e) {
-        console.error("Failed to refetch alerts:", e);
-    }
+const refetchAlerts = async (projectId, aoiId = null) => {
+  try {
+    const { alerts, timeRange } = await apiClient.getProjectAlerts(projectId, aoiId);
+    projectAlerts.value = alerts;
+    alertTimeRange.value = timeRange;
+  } catch (e) {
+    console.error("Failed to refetch alerts:", e);
+  }
 };
+// const refetchAlerts = async (projectId, fromDate, toDate) => {
+//     try {
+//       const { alerts, timeRange } = await apiClient.getProjectAlerts(projectId, aoiId);
+// projectAlerts.value = alerts;
+// alertTimeRange.value = timeRange;
+//         // projectAlerts.value = await apiClient.getProjectAlerts(projectId, fromDate, toDate);
+//     } catch (e) {
+//         console.error("Failed to refetch alerts:", e);
+//     }
+// };
+const fetchAlertsForAoi = async (aoiId = null) => {
+  try {
+    const { alerts, timeRange } = await apiClient.getProjectAlerts(project.value.id, aoiId);
+    projectAlerts.value = alerts;
+    alertTimeRange.value = timeRange;
+  } catch (e) {
+    console.error("Failed to load alerts:", e);
+  }
+};
+
+
+
 </script>
 
 <template>
-  <div class="monitor-map-view h-full flex flex-col">
+  <div class="monitor-map-view h-[85vh] flex flex-col">
     
     <!-- Header - Minimal padding -->
-    <div class="flex-shrink-0 px-2 py-1 sm:px-4 sm:py-2">
+    <div class="flex-shrink-0 px-2 h-[4vh] sm:px-4 sm:py-2">
       <div v-if="project" class="flex items-center justify-between">
         <button
-                    class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base"
+                    class="text-cyan-400 hover:text-cyan-300 transition duration-150  px-2 rounded flex items-center text-sm sm:text-base"
                     @click="goBack">
                     <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -89,8 +117,8 @@ const refetchAlerts = async (projectId, fromDate, toDate) => {
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="project" class="flex-grow relative min-h-0">
-      <div class="absolute inset-0">
+    <div v-else-if="project" class="flex-grow h-[76vh] mt-[1.4vh] relative min-h-0">
+      <div class="h-full inset-0">
         <MapVisualization 
           :key="mapKey"
           :aois-to-display="project.aois" 
@@ -100,14 +128,14 @@ const refetchAlerts = async (projectId, fromDate, toDate) => {
       </div>
 
       <!-- Visualization Panel -->
-      <AoiVizPanel 
-        :is-visible="showVizPanel" 
-        :project-id="project.id" 
-        :all-aois="project.aois"
-        :project-alerts="projectAlerts" 
-        @close="closeVizPanel" 
-        @refetch-alerts="refetchAlerts" 
-      />
+      <AoiVizPanel
+  :is-visible="showVizPanel"
+  :project-id="project.id"
+  :all-aois="project.aois"
+  :project-alerts="projectAlerts"
+  :alert-time-range="alertTimeRange"
+  @close="closeVizPanel"
+/>
     </div>
 
     <!-- Error State -->
