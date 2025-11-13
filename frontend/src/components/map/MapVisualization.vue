@@ -90,57 +90,6 @@ const handleFullscreenChange = () => {
     }
 };
 
-const createBufferPreview = (layer, layerType, bufferDistance = 100) => {
-    console.log('Creating buffer for:', layerType, 'with distance:', bufferDistance);
-
-    // Clear previous buffer layers
-    if (bufferPreviewGroup.value) {
-        bufferPreviewGroup.value.clearLayers();
-    }
-
-    try {
-        if (layerType === 'marker') {
-            // ======== POINT BUFFER ========
-            const latlng = layer.getLatLng();
-            const circle = L.circle(latlng, {
-                radius: bufferDistance, // meters
-                color: '#00BFFF',
-                fillColor: '#3399ff',
-                fillOpacity: 0.3
-            }).addTo(bufferPreviewGroup.value);
-
-            console.log('Circle buffer added around point:', latlng);
-            map.value.fitBounds(circle.getBounds());
-
-        } else if (layerType === 'polyline') {
-            // ======== LINE BUFFER ========
-            const latlngs = layer.getLatLngs();
-
-            // Convert to GeoJSON LineString (lng, lat order)
-            const lineCoords = latlngs.map(p => [p.lng, p.lat]);
-            const line = turf.lineString(lineCoords);
-
-            const buffered = turf.buffer(line, bufferDistance, { units: 'meters' });
-
-            // Add buffer polygon layer
-            const bufferLayer = L.geoJSON(buffered, {
-                style: {
-                    color: '#00BFFF',
-                    weight: 2,
-                    fillColor: '#3399ff',
-                    fillOpacity: 0.3
-                }
-            }).addTo(bufferPreviewGroup.value);
-
-            console.log('Buffer polygon added for line.');
-            map.value.fitBounds(bufferLayer.getBounds());
-        }
-    } catch (err) {
-        console.error('Error creating buffer preview:', err);
-    }
-
-    map.value.invalidateSize();
-};
 
 
 const initializeMap = () => {
@@ -172,10 +121,7 @@ const initializeMap = () => {
     drawnItems.value = new L.FeatureGroup();
     map.value.addLayer(drawnItems.value);
 
-    // Buffer preview on TOP so it's always visible
-    bufferPreviewGroup.value = new L.FeatureGroup();
-    bufferPreviewGroup.value.setZIndex(10);
-    map.value.addLayer(bufferPreviewGroup.value);
+    
 
     if (!props.isMonitorMode) {
         setupDrawingControls();
@@ -212,7 +158,7 @@ const setupDrawingControls = () => {
             rectangle: false,
             circle: false,
             circlemarker: false
-            
+
 
         }
     });
@@ -220,12 +166,12 @@ const setupDrawingControls = () => {
     map.value.addControl(drawControl);
 
     // Clear preview when starting new drawing
-    map.value.on('draw:drawstart', (e) => {
-        console.log('Draw started');
-        if (bufferPreviewGroup.value) {
-            bufferPreviewGroup.value.clearLayers();
-        }
-    });
+    // map.value.on('draw:drawstart', (e) => {
+    //     console.log('Draw started');
+    //     if (bufferPreviewGroup.value) {
+    //         bufferPreviewGroup.value.clearLayers();
+    //     }
+    // });
 
     // Handle completed drawing
     map.value.on(L.Draw.Event.CREATED, (e) => {
@@ -274,10 +220,6 @@ const loadExistingAOIs = (aois, shouldFitBounds = false) => {
     savedAoisLayerGroup.value.clearLayers();
 
     if (!aois || aois.length === 0) return;
-
-    
-
-
     const aoiLayers = aois.map(aoi => {
         const layer = L.geoJSON(aoi.geomGeoJson || aoi.geometry, {
             style: {
@@ -302,22 +244,22 @@ const loadExistingAOIs = (aois, shouldFitBounds = false) => {
                     });
                 }
                 if (aoi.bufferDistance && aoi.geometryType !== 'Polygon') {
-        if (aoi.geometryType === 'Point') {
-            const [lng, lat] = aoi.geometry.coordinates;
-            console.log(lat);
-            L.circle([lat, lng], {
-                radius: aoi.bufferDistance,
-                color: '#00BFFF',
-                fillColor: '#3399ff',
-                fillOpacity: 0.3
-            }).addTo(savedAoisLayerGroup.value);
-        } else if (aoi.geometryType === 'LineString') {
-            const buffered = turf.buffer(aoi.geometry, aoi.bufferDistance, { units: 'meters' });
-            L.geoJSON(buffered, {
-                style: { color: '#00BFFF', weight: 2, fillColor: '#3399ff', fillOpacity: 0.3 }
-            }).addTo(savedAoisLayerGroup.value);
-        }
-    }
+                    if (aoi.geometryType === 'Point') {
+                        const [lng, lat] = aoi.geometry.coordinates;
+                        console.log(lat);
+                        L.circle([lat, lng], {
+                            radius: aoi.bufferDistance,
+                            color: '#00BFFF',
+                            fillColor: '#3399ff',
+                            fillOpacity: 0.3
+                        }).addTo(savedAoisLayerGroup.value);
+                    } else if (aoi.geometryType === 'LineString') {
+                        const buffered = turf.buffer(aoi.geometry, aoi.bufferDistance, { units: 'meters' });
+                        L.geoJSON(buffered, {
+                            style: { color: '#00BFFF', weight: 2, fillColor: '#3399ff', fillOpacity: 0.3 }
+                        }).addTo(savedAoisLayerGroup.value);
+                    }
+                }
             }
         });
         return layer;
@@ -464,5 +406,4 @@ watch(() => props.aoisToDisplay?.length, (newLength, oldLength) => {
 }
 
 /* Enhanced visibility for buffer preview */
-
 </style>
