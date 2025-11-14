@@ -1,3 +1,25 @@
+
+I am working a DEVELOPEMNET, a project where a user defines an AOI configure OR maps a algorithm to that AOI and then submit that project. later he can come and update the project. 
+now i have issues with the project, first lets understand deeply how is it going to work. 
+user will start creating a project with name, desc and if he wishes to add any auxilary key value pair data -> this gets saved to the projects table. then he will move to the next step of defining AOI under that project. This AOI will be drawn on map using leaftlet. An user can draw three types of AOI a point with a buffer radius making it a polygon, a line with buffer distance making up a polygon and a polygon itself drawn using tools ,  after drawing an AOI user will give its name and  if its a polygon then ok otherwise will give its buffer distance/radus and then if he wishes he can add more auxillary fields for that AOi. -> this gets stored in area_of_interest table. then against each AOI user will map one or many algorithm, this algorthms will come from algorithm_catalogue table. here we will need a instance like bucket that will store all the mappings of AOI to ALgorithm to args of the ALgorithm that means if args of a algorithm is changed while defining then it will create a new mapping also one aoi can be mapped to same algo multiple times but args must be different. It is required to map an AOI to an ALgo -> this mapping will be stored at aoi_algorithm_mapping table marking the status column of that entry as 1 that means this mapping is active. 
+then comes the final step of adding users to this project with specific roles of analyst and viewer. this users are the existing users of the table users. 
+
+The above is the project creation flow.
+As an analyst user can manage and monitor project
+as a viewer user can only monitor project.
+in aoi_algorithm_mapping table there is a status column which means whether the mapping is:
+0 means inactive mapping
+1 means active mapping
+2 means mapping removed 
+
+now when come to managing project user can edit or delete everything but AOI cannot be edited just user can either delete or create a new AOI, when new aoi created a new mapping will be made and when aoi is deleted then change the status column of aoi_algorithm_mapping to 2. now at step 3 user will see the bucket where all his selected algorithms are present and there he can remove (2) an algorithm or set its status to 0 with a checkbox Active . outside the bucket user can map a new algo to the AOI same step like creating a new project. then comes the final managing step of adding a user, here the current user can add or remove another user but cannot remove himself and owner from project. 
+
+
+This is all about my project, I have already made the project and now i need to refine it based on the above story. below is my all table structures i am using now and the project folder structure followed by codes of all concerned files.
+
+if you find any flow error in table schema then suggest me to fix it all aux data can be edited while managing a project. 
+
+
 # 🛰️ Gadura V1: Geospatial Project Manager (Class-Oriented Full Stack)
 
 Gadura V1 is a **full-stack, class-oriented application** built with Vue 3 (Frontend) and Node/TypeScript (Backend) that allows users to define geospatial projects, manage Areas of Interest (AOIs) using PostGIS, and delivers **real-time alerts** via Change Data Capture (CDC).
@@ -70,10 +92,10 @@ This section covers setting up the database and preparing it for Change Data Cap
 PORT=3000
 
 # Database Configuration
-DB_USER=gadura_user
+DB_USER=postgres
 DB_HOST=localhost
-DB_DATABASE=gadura_v1_db
-DB_PASSWORD=your_strong_password
+DB_DATABASE=garuda
+DB_PASSWORD=qazwsx123
 DB_PORT=5432
 ```
 
@@ -211,6 +233,8 @@ We will use **Kafka in KRaft mode** for simplicity and performance.
 ---
 
 ## 🚀 3. Running the Complete CDC Pipeline
+
+
 
 The complete application requires **five** separate terminals running concurrently to establish the real-time pipeline.
 

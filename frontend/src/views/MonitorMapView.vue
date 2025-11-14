@@ -92,24 +92,7 @@ const fetchAlertsForAoi = async (aoiId = null) => {
   <div class="monitor-map-view h-[85vh] flex flex-col">
     
     <!-- Header - Minimal padding -->
-    <div class="flex-shrink-0 px-2 h-[4vh] sm:px-4 sm:py-2">
-      <div v-if="project" class="flex items-center justify-between">
-        <button
-                    class="text-cyan-400 hover:text-cyan-300 transition duration-150  px-2 rounded flex items-center text-sm sm:text-base"
-                    @click="goBack">
-                    <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-
-                </button>
-        <div>
-          <h2 class="text-lg sm:text-xl font-bold text-white truncate">{{ project.project_name }}</h2>
-          <p class="text-xs sm:text-sm text-green-400">AOIs: {{ project.aois.length }}</p>
-        </div>
-      </div>
-    </div>
+    
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex-grow flex items-center justify-center text-white">
@@ -117,7 +100,7 @@ const fetchAlertsForAoi = async (aoiId = null) => {
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="project" class="flex-grow h-[76vh] mt-[1.4vh] relative min-h-0">
+    <div v-else-if="project" class="flex-grow h-[80vh] mt-[1.4vh] relative min-h-0">
       <div class="h-full inset-0">
         <MapVisualization 
           :key="mapKey"

@@ -52,6 +52,7 @@ const savedAoisLayerGroup = ref(null);
 const bufferPreviewGroup = ref(null);
 const mapDiv = ref(null);
 const isFullscreen = ref(false);
+const drawControlRef = ref(null);
 
 const safePatch = (handler) => {
     if (handler && handler.prototype && !handler.prototype._fireCreatedEvent) {
@@ -164,6 +165,7 @@ const setupDrawingControls = () => {
 
         }
     });
+    drawControlRef.value = drawControl;
 
     map.value.addControl(drawControl);
 
@@ -176,6 +178,14 @@ const setupDrawingControls = () => {
     // });
 
     // Handle completed drawing
+
+    map.value.on(L.Draw.Event.DRAWSTOP, (e) => {
+        // console.log('Draw stopped/cancelled');
+        initializeMap();
+        // If you had any temporary handlers or state, clear them here.
+        // For standard Leaflet Draw, this is usually sufficient.
+    });
+
     map.value.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
         const layerType = e.layerType;
@@ -185,10 +195,7 @@ const setupDrawingControls = () => {
         // Add to drawn items first
         drawnItems.value.addLayer(layer);
 
-        // Create buffer preview AFTER adding to map
-        setTimeout(() => {
-            createBufferPreview(layer, layerType);
-        }, 100);
+        // Create buffer preview AFTER a
 
         const geoJsonFeature = layer.toGeoJSON();
         let geometryType;

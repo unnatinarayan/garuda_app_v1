@@ -14,6 +14,8 @@ export class AlgorithmCatalogueModel {
     defaultArgs = null;
     description = null;
     category = null;
+    displayName = null; 
+    isActive = null;
 
     /**
      * @param {Object} data 
@@ -24,18 +26,29 @@ export class AlgorithmCatalogueModel {
         this.defaultArgs = data.args ?? null;
         this.description = data.description ?? null;
         this.category = data.category ?? null;
+        this.displayName = data.display_name ?? null; 
+        this.isActive = data.isactive ?? data.is_active ?? true;
     }
 
     /**
      * Fetches all algorithms from the catalogue.
      * @returns {Promise<AlgorithmCatalogueModel[]>}
      */
+
     static async findAll() {
-        const query = `SELECT * FROM algorithm_catalogue ORDER BY category, algo_id;`;
+        // Must select display_name
+        const query = `SELECT id, algo_id, args, description, category, auxdata, display_name, isactive FROM algorithm_catalogue ORDER BY category, algo_id;`;
         const result = await db.query(query);
 
         return result.rows.map(row => new AlgorithmCatalogueModel(row));
     }
+
+    // static async findAll() {
+    //     const query = `SELECT * FROM algorithm_catalogue ORDER BY category, algo_id;`;
+    //     const result = await db.query(query);
+
+    //     return result.rows.map(row => new AlgorithmCatalogueModel(row));
+    // }
 
     /**
      * Fetches a single algorithm by its unique string ID.

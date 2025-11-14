@@ -1,7 +1,5 @@
 // ApiClient.js
-
 import axios from 'axios';
-
 /**
  * ApiClient: Manages all API calls, including setting headers for authentication.
  */

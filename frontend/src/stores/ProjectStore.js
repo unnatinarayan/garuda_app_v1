@@ -50,6 +50,8 @@ function mapBackendToForm(data) {
             // aoi.geom_properties?.buffer || null
         );
         aoiDraft.aoiId = aoi.aoi_id;
+        aoiDraft.dbId = aoi.id; // NEW: Store database ID
+        aoiDraft.status = aoi.status || 1;
 
         aoiDraft.geomProperties = {
             ...aoi.geom_properties,
@@ -59,15 +61,20 @@ function mapBackendToForm(data) {
         // aoiDraft.geomProperties = aoi.geom_properties || {};
 
         // Map algorithms
+        
         if (aoi.mappedAlgorithms && aoi.mappedAlgorithms.length > 0) {
-            aoi.mappedAlgorithms.forEach((algo) => {
-                aoiDraft.mapAlgorithm(
-                    algo.algo_id,
-                    algo.algo_id,
-                    algo.config_args || {}
-                );
-            });
-        }
+            aoi.mappedAlgorithms.forEach((algo) => {
+                // Push full object with all required properties
+                aoiDraft.mappedAlgorithms.push({
+                    algoId: algo.algo_id,
+                    name: algo.algo_id,
+                    configArgs: algo.config_args || {},
+                    status: algo.status, // CRITICAL: Map status from backend
+                    mappingId: algo.mapping_id // CRITICAL: Map the database ID
+                });
+            });
+        }
+        
         return aoiDraft;
     });
 
@@ -244,3 +251,16 @@ export const useProjectStore = defineStore('project', () => {
 
     };
 });
+
+
+
+
+// if (aoi.mappedAlgorithms && aoi.mappedAlgorithms.length > 0) {
+        //     aoi.mappedAlgorithms.forEach((algo) => {
+        //         aoiDraft.mapAlgorithm(
+        //             algo.algo_id,
+        //             algo.algo_id,
+        //             algo.config_args || {}
+        //         );
+        //     });
+        // }

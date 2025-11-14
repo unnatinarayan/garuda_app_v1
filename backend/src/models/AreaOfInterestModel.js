@@ -80,48 +80,104 @@ export class AreaOfInterestModel {
      * @param {number} projectId
      * @returns {Promise<AreaOfInterestModel[]>}
      */
-    static async findByProjectId(projectId) {
-        // NOTE: We use ST_AsGeoJSON to retrieve the geometry in a usable format for the frontend
-        const query = `
-            SELECT
-                id, project_id, aoi_id, name, auxdata, geom_properties,
-                ST_AsGeoJSON(geom) AS geom_geojson_string
-            FROM area_of_interest
-            WHERE project_id = $1;
-        `;
-        const result = await db.query(query, [projectId]);
 
-        return result.rows.map(row => new AreaOfInterestModel({
-            ...row,
-            geomGeoJson: JSON.parse(row.geom_geojson_string), // Parse the GeoJSON string back to object
-            project_id: row.project_id
-        }));
-    }
+    static async findByProjectId(projectId, includeStatus = [1]) {
+    // NOTE: This array check is simpler for the new single-status implementation
+    const statusList = includeStatus.join(',');
+    const query = `
+        SELECT
+            id, project_id, aoi_id, name, auxdata, geom_properties, status, -- Include status
+            ST_AsGeoJSON(geom) AS geom_geojson_string
+        FROM area_of_interest
+        WHERE project_id = $1 AND status IN (${statusList}); -- Filter by status
+    `;
+    const result = await db.query(query, [projectId]);
 
+    return result.rows.map(row => new AreaOfInterestModel({
+        ...row,
+        geomGeoJson: JSON.parse(row.geom_geojson_string),
+        project_id: row.project_id
+    }));
+}
+
+  
+
+
+
+    static async softDeleteByProjectId(client, projectId) {
+   
+    // CRITICAL: Update the status column instead of deleting rows
+    const query = `
+        UPDATE area_of_interest
+        SET status = 2 -- 2 = removed (soft-delete)
+        WHERE project_id = $1
+        RETURNING id;
+    `;
+    const result = await client.query(query, [projectId]);
+    return result.rowCount;
+}
+
+static async deleteByProjectId(client, projectId) {
+    // Old destructive delete - replaced by soft-delete in update flow.
+    // Keeping this for destructive project deletion, if needed.
+    const query = `DELETE FROM area_of_interest WHERE project_id = $1;`;
+    const result = await client.query(query, [projectId]);
+    return result.rowCount;
+}
+
+static async findByProjectId(projectId, includeStatus = [1]) {
+    // NOTE: This array check is simpler for the new single-status implementation
+    const statusList = includeStatus.join(',');
+    const query = `
+        SELECT
+            id, project_id, aoi_id, name, auxdata, geom_properties, status, -- Include status
+            ST_AsGeoJSON(geom) AS geom_geojson_string
+        FROM area_of_interest
+        WHERE project_id = $1 AND status IN (${statusList}); -- Filter by status
+    `;
+    const result = await db.query(query, [projectId]);
+
+    return result.rows.map(row => new AreaOfInterestModel({
+        ...row,
+        geomGeoJson: JSON.parse(row.geom_geojson_string),
+        project_id: row.project_id
+    }));
+}
     /**
      * Fetches all mapped algorithms and their configurations for this AOI.
      * @param {any} client
      * @returns {Promise<any[]>}
      */
-    async getMappedAlgorithms(client) {
-        // CRITICAL: Now joins using the aoi_id (text) and project_id (int) as join keys.
-        const query = `
-            SELECT
-                aam.id as mapping_id,
-                aam.change_algo_configured_args as config_args,
-                ac.algo_id,
-                ac.description,
-                ac.category,
-                ac.id as algo_pk_id
-            FROM aoi_algorithm_mapping aam
-            JOIN area_of_interest aoi ON aam.project_id = aoi.project_id AND aam.aoi_id = aoi.aoi_id
-            JOIN algorithm_catalogue ac ON aam.change_algo_id = ac.algo_id
-            WHERE aam.project_id = $1 AND aam.aoi_id = $2;
-        `;
-        // Use the passed client for transaction context (important for reuse)
-        const result = await client.query(query, [this.projectId, this.aoiId]); // Use projectId and aoiId (string)
-        return result.rows;
-    }
 
-    // Add update, delete, and other core methods here... to be completed
+
+    /**
+ * Fetches all mapped algorithms for this AOI, INCLUDING status
+ * @param {any} client - Database client
+ * @returns {Promise<any[]>}
+ */
+async getMappedAlgorithms(client) {
+    const query = `
+        SELECT
+            aam.id as mapping_id,
+            aam.change_algo_configured_args as config_args,
+            aam.status, -- CRITICAL: Include status
+            ac.algo_id,
+            ac.description,
+            ac.category,
+            ac.id as algo_pk_id
+        FROM aoi_algorithm_mapping aam
+        JOIN area_of_interest aoi 
+            ON aam.project_id = aoi.project_id 
+            AND aam.aoi_id = aoi.aoi_id
+        JOIN algorithm_catalogue ac 
+            ON aam.change_algo_id = ac.algo_id
+        WHERE aam.project_id = $1 
+            AND aam.aoi_id = $2
+            AND aam.status != 2; -- CRITICAL: Exclude soft-deleted mappings
+    `;
+    
+    const result = await client.query(query, [this.projectId, this.aoiId]);
+    return result.rows;
+}
+
 }

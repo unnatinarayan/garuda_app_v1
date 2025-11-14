@@ -5,7 +5,9 @@ import { useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/ProjectStore.js';
 import { UserSession } from '@/classes/UserSession.js';
 import { ref, onMounted, computed } from 'vue';
-
+import InlineMessage from "@/components/common/InlineMessage.vue";
+import { useMessageStore } from '@/stores/MessageStore.js';
+const messageStore = useMessageStore();
 
 const router = useRouter();
 const projectStore = useProjectStore();
@@ -57,8 +59,9 @@ const handleLogout = () => {
                     <p class="text-gray-400" style="color: var(--text-muted);">Total Projects</p>
                     <p class="font-bold text-xl" style="color: var(--text-color);">{{ totalProjects }}</p>
                 </div>
-                
+                 <InlineMessage />
             </div>
+           
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 

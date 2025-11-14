@@ -69,32 +69,53 @@ export class ProjectService {
                 }
 
                 const aoiQuery = `
-    WITH original_geom AS (
-        SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
-    )
-    INSERT INTO area_of_interest
-    (project_id, aoi_id, name, geom, geom_properties)
-    SELECT
-        $1, $2, $3,
-        CASE
-            -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
-            WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
-                -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
-                ST_Transform(
-                    ST_Buffer(
-                        ST_Transform(geom, 3857),
-                        CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END
-                    ),
-                    4326
-                )
-            -- If it's already a Polygon, use the geometry as-is.
-            ELSE
-                geom
-        END,
-        $6
-    FROM original_geom
-    RETURNING id;
+ WITH original_geom AS (
+     SELECT ST_GeomFromGeoJSON($4) AS geom 
+ )
+ INSERT INTO area_of_interest
+ (project_id, aoi_id, name, geom, geom_properties, status) -- CRITICAL: Add status column
+ SELECT
+     $1, $2, $3,
+     CASE
+         -- ... (geometry transformation logic as before)
+         WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
+             ST_Transform(ST_Buffer(ST_Transform(geom, 3857), CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END), 4326)
+         ELSE
+             geom
+     END,
+     $6,
+     1 -- CRITICAL: Set status = 1 (Active)
+ FROM original_geom
+ RETURNING id;
 `;
+
+//                 const aoiQuery = `
+//     WITH original_geom AS (
+//         SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
+//     )
+//     INSERT INTO area_of_interest
+//     (project_id, aoi_id, name, geom, geom_properties)
+//     SELECT
+//         $1, $2, $3,
+//         CASE
+//             -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
+//             WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
+//                 -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
+//                 ST_Transform(
+//                     ST_Buffer(
+//                         ST_Transform(geom, 3857),
+//                         CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END
+//                     ),
+//                     4326
+//                 )
+//             -- If it's already a Polygon, use the geometry as-is.
+//             ELSE
+//                 geom
+//         END,
+//         $6
+//     FROM original_geom
+//     RETURNING id;
+// `;
 
                 const aoiResult = await client.query(aoiQuery, [
                     projectId,
@@ -111,14 +132,15 @@ export class ProjectService {
                 // 2. Insert AOI-Algorithm Mappings (Uses aoi_id and algo_id string)
                 for (const algo of aoiItem.mappedAlgorithms) {
                     const mappingQuery = `
-                        INSERT INTO aoi_algorithm_mapping (project_id, aoi_id, change_algo_id, change_algo_configured_args)
-                        VALUES ($1, $2, $3, $4);
+                        INSERT INTO aoi_algorithm_mapping (project_id, aoi_id, change_algo_id, change_algo_configured_args, status)
+                        VALUES ($1, $2, $3, $4, $5);
                     `;
                     await client.query(mappingQuery, [
                         projectId,
                         aoiItem.aoiId,
                         algo.algoId,
-                        algo.configArgs
+                        algo.configArgs,
+                        1
                     ]);
                 }
 
@@ -164,6 +186,9 @@ export class ProjectService {
         }
     }
 
+
+
+
     /**
      * Executes a complete transaction to update an existing project,
      * including project info, AOIs, Algo Mappings, and User Assignments.
@@ -196,73 +221,206 @@ export class ProjectService {
 
             // Execute the UPDATE query for the project table
             await projectModel.update(client);
+            console.log(`[Update] Updated project ${projectId} basic info.`);
+
 
             // --------------------- Step 2 & 3: AOI and Algo Mapping Update ---------------------
             // AOI/Mapping Update Strategy: Delete all existing AOIs/Mappings and re-insert the new list
 
-            // A. Clean up old AOIs (which also cascades to aoi_algorithm_mapping)
-            const deletedAoiCount = await AreaOfInterestModel.deleteByProjectId(client, projectId);
-            console.log(`[Update] Deleted ${deletedAoiCount} old AOIs for Project ${projectId}.`);
+            await client.query(`DELETE FROM alerts WHERE mapping_id IN (SELECT id FROM aoi_algorithm_mapping WHERE project_id = $1);`, [projectId]);
+        
+        // 2. Delete Mappings
+        // await client.query(`DELETE FROM aoi_algorithm_mapping WHERE project_id = $1;`, [projectId]);
+        //     // A. Clean up old AOIs (which also cascades to aoi_algorithm_mapping)
+        //     const deletedAoiCount = await AreaOfInterestModel.deleteByProjectId(client, projectId);
+        //     console.log(`[Update] Deleted ${deletedAoiCount} old AOIs for Project ${projectId}.`);
 
             // B. Insert the new list of AOIs and their Mappings (reusing the create logic)
             for (const aoiItem of bundle.aoiData) {
+
+                const { aoiId, dbId, status, name, geomGeoJson, geomProperties, mappedAlgorithms } = aoiItem;
+
                 // --- GEOMETRY PROCESSING LOGIC (SAME AS CREATE) ---
                 const geomString = JSON.stringify(aoiItem.geomGeoJson);
                 const buffer = Number(aoiItem.geomProperties?.buffer) || 0;
 
+                // --- CASE 1: Existing AOI (has dbId) ---
+                if (dbId) {
+                    if (status === 2) {
+                        // SOFT DELETE: Mark AOI as removed
+                        await client.query(
+                            `UPDATE area_of_interest SET status = 2 WHERE id = $1;`,
+                            [dbId]
+                        );
+                        
+                        // Also soft-delete all its mappings
+                        await client.query(
+                            `UPDATE aoi_algorithm_mapping SET status = 2 
+                             WHERE project_id = $1 AND aoi_id = $2;`,
+                            [projectId, aoiId]
+                        );
+                        
+                        console.log(`[Update] Soft-deleted AOI ${aoiId} (DB ID: ${dbId})`);
+                        continue; // Skip to next AOI
+                    } else {
+                        // AOI is active: Update name/properties if needed
+                        await client.query(
+                            `UPDATE area_of_interest 
+                             SET name = $1, geom_properties = $2, status = $3 
+                             WHERE id = $4;`,
+                            [name, geomProperties, status, dbId]
+                        );
+                        console.log(`[Update] Updated AOI ${aoiId} metadata.`);
+                    }
+                }
+                // --- CASE 2: New AOI (no dbId) ---
+                else {
+                    const geomString = JSON.stringify(geomGeoJson);
+                    const buffer = Number(geomProperties?.buffer) || 0;
 
-                const aoiQuery = `
-    WITH original_geom AS (
-        SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
-    )
-    INSERT INTO area_of_interest
-    (project_id, aoi_id, name, geom, geom_properties)
-    SELECT
-        $1, $2, $3,
-        CASE
-            -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
-            WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
-                -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
-                ST_Transform(
-                    ST_Buffer(
-                        ST_Transform(geom, 3857),
-                        CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END
-                    ),
-                    4326
-                )
-            -- If it's already a Polygon, use the geometry as-is.
-            ELSE
-                geom
-        END,
-        $6
-    FROM original_geom
-    RETURNING id;
-`;
+                    const aoiQuery = `
+                        WITH original_geom AS (
+                            SELECT ST_GeomFromGeoJSON($4) AS geom
+                        )
+                        INSERT INTO area_of_interest
+                        (project_id, aoi_id, name, geom, geom_properties, status)
+                        SELECT $1, $2, $3,
+                            CASE
+                                WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
+                                    ST_Transform(
+                                        ST_Buffer(
+                                            ST_Transform(geom, 3857),
+                                            CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END
+                                        ),
+                                        4326
+                                    )
+                                ELSE geom
+                            END,
+                            $6, 1
+                        FROM original_geom
+                        RETURNING id;
+                    `;
+                    
+                    await client.query(aoiQuery, [
+                        projectId,
+                        aoiId,
+                        name,
+                        geomString,
+                        buffer,
+                        geomProperties
+                    ]);
+                    
+                    console.log(`[Update] Inserted new AOI ${aoiId}.`);
+                }
 
-                const aoiResult = await client.query(aoiQuery, [
-                    projectId,
-                    aoiItem.aoiId,
-                    aoiItem.name,
-                    geomString,
-                    buffer,
-                    aoiItem.geomProperties,
-                ]);
-                // const aoiPkId = aoiResult.rows[0].id; // Not strictly needed
+//                 const aoiQuery = `
+//     WITH original_geom AS (
+//         SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
+//     )
+//     INSERT INTO area_of_interest
+//     (project_id, aoi_id, name, geom, geom_properties)
+//     SELECT
+//         $1, $2, $3,
+//         CASE
+//             -- Check if the geometry type is Point (ST_Point) or Line (ST_LineString)
+//             WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
+//                 -- Use a minimum buffer of 0.0001 meters if buffer is 0, to force a Polygon output.
+//                 ST_Transform(
+//                     ST_Buffer(
+//                         ST_Transform(geom, 3857),
+//                         CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END
+//                     ),
+//                     4326
+//                 )
+//             -- If it's already a Polygon, use the geometry as-is.
+//             ELSE
+//                 geom
+//         END,
+//         $6
+//     FROM original_geom
+//     RETURNING id;
+// `;
+
+//                 const aoiResult = await client.query(aoiQuery, [
+//                     projectId,
+//                     aoiItem.aoiId,
+//                     aoiItem.name,
+//                     geomString,
+//                     buffer,
+//                     aoiItem.geomProperties,
+//                 ]);
+
+                // The status column needs to be explicitly included or rely on the default (1)
+            // const aoiQueryWithStatus = `
+            //     WITH original_geom AS (
+            //         SELECT ST_GeomFromGeoJSON($4) AS geom -- $4 is GeoJSON string
+            //     )
+            //     INSERT INTO area_of_interest
+            //     (project_id, aoi_id, name, geom, geom_properties, status) -- Explicitly list status
+            //     SELECT
+            //         $1, $2, $3,
+            //         CASE
+            //             WHEN ST_GeometryType(geom) IN ('ST_Point', 'ST_LineString') THEN
+            //                 ST_Transform(ST_Buffer(ST_Transform(geom, 3857), CASE WHEN $5 > 0 THEN $5 ELSE 0.0001 END), 4326)
+            //             ELSE
+            //                 geom
+            //         END,
+            //         $6,
+            //         1 -- Always insert as ACTIVE (status=1) during a fresh re-insert
+            //     FROM original_geom
+            //     RETURNING id;
+            // `;
+            // await client.query(aoiQueryWithStatus, [
+            //     projectId,
+            //     aoiItem.aoiId,
+            //     aoiItem.name,
+            //     geomString,
+            //     buffer,
+            //     aoiItem.geomProperties,
+            // ]);
+            //     // const aoiPkId = aoiResult.rows[0].id; // Not strictly needed
 
                 // Insert new AOI-Algorithm Mappings
-                for (const algo of aoiItem.mappedAlgorithms) {
-                    const mappingQuery = `
-                        INSERT INTO aoi_algorithm_mapping (project_id, aoi_id, change_algo_id, change_algo_configured_args)
-                        VALUES ($1, $2, $3, $4);
-                    `;
-                    await client.query(mappingQuery, [
-                        projectId,
-                        aoiItem.aoiId,
-                        algo.algoId,
-                        algo.configArgs
-                    ]);
+
+
+            // ===== STEP 3: Process Algorithm Mappings (Smart Updates) =====
+                for (const algo of mappedAlgorithms) {
+                    const { algoId, configArgs, status: algoStatus, mappingId } = algo;
+
+                    // --- CASE A: Existing Mapping (has mappingId) ---
+                    if (mappingId) {
+                        if (algoStatus === 2) {
+                            // SOFT DELETE
+                            await client.query(
+                                `UPDATE aoi_algorithm_mapping SET status = 2 WHERE id = $1;`,
+                                [mappingId]
+                            );
+                            console.log(`[Update] Soft-deleted mapping ${mappingId}`);
+                        } else {
+                            // UPDATE: Status or args changed
+                            await client.query(
+                                `UPDATE aoi_algorithm_mapping 
+                                 SET status = $1, change_algo_configured_args = $2 
+                                 WHERE id = $3;`,
+                                [algoStatus, configArgs, mappingId]
+                            );
+                            console.log(`[Update] Updated mapping ${mappingId} (status=${algoStatus})`);
+                        }
+                    }
+                    // --- CASE B: New Mapping (no mappingId) ---
+                    else if (algoStatus !== 2) {
+                        await client.query(
+                            `INSERT INTO aoi_algorithm_mapping 
+                             (project_id, aoi_id, change_algo_id, change_algo_configured_args, status)
+                             VALUES ($1, $2, $3, $4, $5);`,
+                            [projectId, aoiId, algoId, configArgs, algoStatus]
+                        );
+                        console.log(`[Update] Inserted new mapping for ${algoId} on ${aoiId}`);
+                    }
                 }
             }
+
+            
 
 
             // --------------------- Step 4: Update Users (No change) ---------------------
@@ -287,12 +445,14 @@ export class ProjectService {
 
             // Finalize the transaction
             await client.query('COMMIT');
+            console.log(`[Update] Project ${projectId} update completed successfully.`);
+
             return projectModel;
 
         } catch (error) {
             await client.query('ROLLBACK');
             console.error('Project update failed, transaction rolled back:', error);
-            throw new Error(`Transaction failed. Details: ${(error).detail || (error).message}`);
+            throw new Error(`Update failed. Details: ${(error).detail || (error).message}`);
         } finally {
             client.release();
         }

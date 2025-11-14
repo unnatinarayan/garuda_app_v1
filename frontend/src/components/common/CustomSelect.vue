@@ -1,3 +1,5 @@
+<!-- frontend/src/components/common/CustomSelect.vue -->
+
 <script setup>
 import { ref, watch, computed } from 'vue';
 

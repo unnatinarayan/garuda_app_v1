@@ -154,21 +154,20 @@ const closeOnFocusOut = () => {
             </span>
         </button>
 
-        <div v-if="isDropdownOpen" tabindex="-1"
-             @focusout="closeOnFocusOut" class="absolute mt-3 bg-black rounded-lg shadow-xl z-[3000] ring-1 ring-black ring-opacity-5 
+        <div v-if="isDropdownOpen" tabindex="-1" @focusout="closeOnFocusOut" class="absolute  bg-black rounded-lg shadow-xl z-[3000] ring-1 ring-black ring-opacity-5 
                     w-72 sm:w-80 right-0 max-w-[calc(100vw-20px)]">
             <div class="p-3 flex items-center justify-between border-b border-gray-600">
-  
-  <h3 class="text-lg font-semibold text-white flex-grow text-center">
-   Alerts
-  </h3>
-  
-  <div class="p-2 text-xs">
-    <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white text-red-500">
-      Close
-    </a>
-  </div>
-</div>
+
+                <h3 class="text-lg font-semibold text-white flex-grow text-center">
+                    Alerts
+                </h3>
+
+                <div class="p-2 text-xs">
+                    <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white text-red-500">
+                        Close
+                    </a>
+                </div>
+            </div>
 
             <div class="max-h-80 overflow-y-auto">
                 <div v-if="totalAlerts === 0" class="p-4 text-gray-400 text-center">
@@ -181,10 +180,11 @@ const closeOnFocusOut = () => {
 
                         <div @click="handleNavigationClick(alert)" class="flex-grow pr-3 cursor-pointer">
                             <p class="text-sm font-bold text-cyan-100 break-words">
-                                {{ alert.project_name || alert.projectId }}: {{ alert.aoi_name || alert.aoiId }} has an
-                                Alert for {{ alert.algoId }}
+                                <span class="text-red">{{ alert.project_name || alert.projectId }}</span>: <span
+                                    class="text-olive"> {{ alert.aoi_name || alert.aoiId }} </span> has an
+                                Alert for <span class="text-green"> {{ alert.algoId }}</span>
                             </p>
-                            <p class="text-xs text-start text-gray-500 mt-1 ">
+                            <p class="text-xs text-start text-white mt-1 ">
                                 {{ new Date(alert.timestamp).toLocaleTimeString() }} {{ new
                                     Date(alert.timestamp).toLocaleDateString() }}
                             </p>
@@ -238,3 +238,17 @@ const closeOnFocusOut = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.text-red {
+    color: red !important;
+}
+
+.text-olive {
+    color: olivedrab;
+}
+
+.text-green {
+    color: yellow;
+}
+</style>

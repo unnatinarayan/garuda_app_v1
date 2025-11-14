@@ -1,6 +1,5 @@
 <!-- frontend/src/views/ConfigureProjectUI.vue-->
 
-
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -16,6 +15,7 @@ const props = defineProps({
     id: String,
 });
 
+import { nextTick } from 'vue';
 // Component Imports
 import Step1BasicInfo from '@/components/steps/Step1BasicInfo.vue';
 import Step2DefineAOI from '@/components/steps/Step2DefineAOI.vue';
@@ -82,6 +82,8 @@ const handleSubmit = async () => {
             `Project successfully ${isUpdateMode.value ? 'updated.' : 'created!'}`,
             "success"
         );
+        
+        
         // alert('Project successfully ' + (isUpdateMode.value ? 'updated.' : 'created!'));
         router.push('/');
     } catch (error) {
@@ -226,7 +228,7 @@ const progressWidth = computed(() => {
 
         
 
-        <div class="w-full max-w-6xl mx-auto h-[68vh] px-4 py-3 relative ">
+        <div class="w-full max-w-6xl mx-auto h-[69vh] px-4 pb-3 pt-2 relative ">
 
 
 
@@ -240,12 +242,12 @@ const progressWidth = computed(() => {
 
 
         </div>
-        <div class="w-full h-[2vh] max-w-6xl mt-2 px-4 mx-auto flex justify-between items-center">
+        <div class="w-full h-[2vh] max-w-6xl mt-1 px-4 mx-auto flex justify-between items-center">
 
             <button v-if="currentStep != 1"
-                class="px-3 py-1 text-white-400 bg-orange-700 rounded-lg font-semibold transition duration-150 text-sm"
+                class="px-3 py-1 text-white-400 bg-cyan-700 rounded-lg font-semibold transition duration-150 text-sm"
                 @click="goBack">
-                Previous Step
+                Back
             </button>
             <button v-else
                 class="text-cyan-400 ml-4 hover:text-cyan-300 transition duration-150 py-1 px-3 w-5 rounded flex items-center text-sm sm:text-base">
@@ -254,8 +256,8 @@ const progressWidth = computed(() => {
 
 
             <button v-if="!isFinalStep" @click="nextStep"
-                class="px-3 py-1 text-white-400 bg-green-900 rounded-lg font-semibold transition duration-150 text-sm">
-                Next Step
+                class="px-3 py-1 text-white-100 bg-cyan-500 rounded-lg font-semibold transition duration-150 text-sm">
+                Next
             </button>
             <button v-else @click="handleSubmit"
                 class="px-3 py-1 bg-blue-600 text-white rounded-lg font-semibold transition duration-150 text-sm"
@@ -274,7 +276,7 @@ const progressWidth = computed(() => {
 <style scoped>
 .configure-project-ui {
     /* min-height: 74vh; */
-    display: flex;
+    
     align-items: flex-start;
     justify-content: center;
 

@@ -33,7 +33,7 @@ const removeAuxData = (key) => {
 
 
 <template>
-    <div class="h-[68vh] pt-2 ">
+    <div class="h-[68vh] pt-[1vh] ">
 
         <div class="form-group mb-1">
             <label class="text-gray-400">Project Name:</label>
@@ -68,14 +68,7 @@ const removeAuxData = (key) => {
 
             <div class="flex w-full justify-end items-center gap-3">
 
-                <!-- <button @click="showNewAuxFields = false"
-                    class="text-red-400 hover:text-red-500 font-bold p-1 leading-none text-xl transition duration-150"
-                    title="Cancel">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" />
-                        <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                </button> -->
+                
                 <button @click="showNewAuxFields = false"
                     class="bg-red-500 px-3 py-1.5 text-white rounded-lg text-sm font-semibold transition duration-150"
                     title="Cancel"> Cancel

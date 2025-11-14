@@ -1,3 +1,5 @@
+<!-- frontend/src/components/common/KeyValueEditor.vue -->
+
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 
@@ -24,7 +26,7 @@ const loadInitialData = () => {
         id: Math.random().toString(36).substring(7) // Simple unique ID for the key
     }));
     // Add one empty field at the end for immediate addition
-    newFields.push({ key: '', value: '', id: Math.random().toString(36).substring(7) });
+    // newFields.push({ key: '', value: '', id: Math.random().toString(36).substring(7) });
     argFields.value = newFields;
 };
 

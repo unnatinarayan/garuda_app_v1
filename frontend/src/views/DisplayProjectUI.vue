@@ -177,19 +177,7 @@ const handleDelete = async (projectId, projectName) => {
                             value-key="value" placeholder="Sort by..." class="min-w-[160px] h-[4vh] sm:w-auto" />
 
 
-                        <button @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
-                            class="p-1 h-[4vh] w-[4vh] bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl shadow-lg transition duration-150 flex-shrink-0"
-                            :title="`Sorting: ${sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending'}`">
-                            <svg class="w-[3.5vh] h-[3.5vh]" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path v-if="sortCriteria.direction === 'asc'" stroke-linecap="round"
-                                    stroke-linejoin="round" stroke-width="2"
-                                    d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"></path>
-                                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 4h18M3 8h12M3 12h8m0 0l-4-4m4 4l-4 4"
-                                    style="transform: rotate(180deg); transform-origin: center;"></path>
-                            </svg>
-                        </button>
+                        
                     </div>
                 </div>
 
