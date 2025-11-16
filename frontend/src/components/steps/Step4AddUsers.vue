@@ -1,3 +1,4 @@
+<!-- frontend/src/components/steps/Step4AddUsers.vue -->
 <script setup>
 import { ProjectFormData } from '@/classes/ProjectFormData.js';
 import { ref, computed, watch } from 'vue';

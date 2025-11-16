@@ -13,70 +13,87 @@ const api = ApiClient.getInstance();
 /**
  * Helper function to map the complex backend structure to the simpler ProjectFormData class structure.
  */
-function mapBackendToForm(data) {
 
-    // Instantiate the ProjectFormData class
-    const form = new ProjectFormData(true, data.id); // Set to update mode
+function mapBackendToForm(data) {
+    const form = new ProjectFormData(true, data.id);
 
     // Step 1 Mapping
-    form.projectName = data.project_name; // <-- Backend alias is used
+    form.projectName = data.project_name;
     form.description = data.description;
-    // Map JSONB object to key/value drafts for the form UI
     form.auxDataDrafts = data.auxdata ? Object.entries(data.auxdata).map(([key, value]) => ({
         key,
         value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
     })) : [];
-    form.currentStep = 1; // Reset to start step
+    form.currentStep = 1;
 
     // Step 2 & 3 Mapping (AOIs and Mappings)
     let aoiCounter = 1;
     form.aoiDrafts = data.aois.map((aoi) => {
+        // CRITICAL FIX: Validate and extract geometry correctly
+        let geometry = aoi.geomGeoJson;
+        
+        if (!geometry) {
+            console.error(`AOI ${aoi.name} has no geometry!`);
+            return null;
+        }
 
-        const geometryType = aoi.geomGeoJson?.type ||
-            aoi.geom_properties?.originalType ||
-            'Polygon';
+        // Determine geometry type from actual geometry structure
+        let geometryType = geometry.type;
+        
+        // For GeometryCollection, preserve the structure
+        if (geometryType === 'GeometryCollection') {
+            if (!geometry.geometries || geometry.geometries.length === 0) {
+                console.error(`AOI ${aoi.name} has empty GeometryCollection`);
+                return null;
+            }
+        } else {
+            // For single geometries, validate coordinates exist
+            if (!geometry.coordinates || geometry.coordinates.length === 0) {
+                console.error(`AOI ${aoi.name} has invalid coordinates`);
+                return null;
+            }
+        }
 
-        // Extract buffer distance
+        // Extract buffer configuration
         const bufferDistance = aoi.geom_properties?.buffer || null;
 
-        // Instantiate the AreaOfInterestDraft class
+        // Create AOI Draft with validated geometry
         const aoiDraft = new AreaOfInterestDraft(
             aoi.name,
-            aoi.geomGeoJson,
+            geometry, // Use validated geometry
             aoiCounter++,
             geometryType,
             bufferDistance
-            // aoi.geom_properties?.originalType || 'Polygon', // Preserve original geometry type
-            // aoi.geom_properties?.buffer || null
         );
+
         aoiDraft.aoiId = aoi.aoi_id;
-        aoiDraft.dbId = aoi.id; // NEW: Store database ID
+        aoiDraft.dbId = aoi.id;
         aoiDraft.status = aoi.status || 1;
 
+        // Preserve geom_properties including bufferConfig for multi-polygon
         aoiDraft.geomProperties = {
-            ...aoi.geom_properties,
+            ...(aoi.geom_properties || {}),
             originalType: geometryType,
-            buffer: bufferDistance
+            buffer: bufferDistance,
+            // Preserve bufferConfig if it exists (for multi-polygon)
+            bufferConfig: aoi.geom_properties?.bufferConfig || null
         };
-        // aoiDraft.geomProperties = aoi.geom_properties || {};
 
-        // Map algorithms
-        
+        // Map algorithms with proper status handling
         if (aoi.mappedAlgorithms && aoi.mappedAlgorithms.length > 0) {
-            aoi.mappedAlgorithms.forEach((algo) => {
-                // Push full object with all required properties
+            aoi.mappedAlgorithms.forEach((algo) => {
                 aoiDraft.mappedAlgorithms.push({
                     algoId: algo.algo_id,
                     name: algo.algo_id,
                     configArgs: algo.config_args || {},
-                    status: algo.status, // CRITICAL: Map status from backend
-                    mappingId: algo.mapping_id // CRITICAL: Map the database ID
+                    status: algo.status ?? 1, // Default to active if not specified
+                    mappingId: algo.mapping_id
                 });
-            });
-        }
-        
+            });
+        }
+
         return aoiDraft;
-    });
+    }).filter(draft => draft !== null); // Remove any null entries from failed validations
 
     // Step 4 Mapping (Users)
     form.users = data.users.map((u) => ({
@@ -85,6 +102,8 @@ function mapBackendToForm(data) {
         username: u.user_id,
     }));
 
+    console.log(`[ProjectStore] Mapped ${form.aoiDrafts.length} valid AOIs from backend data`);
+    
     return form;
 }
 
@@ -253,14 +272,3 @@ export const useProjectStore = defineStore('project', () => {
 });
 
 
-
-
-// if (aoi.mappedAlgorithms && aoi.mappedAlgorithms.length > 0) {
-        //     aoi.mappedAlgorithms.forEach((algo) => {
-        //         aoiDraft.mapAlgorithm(
-        //             algo.algo_id,
-        //             algo.algo_id,
-        //             algo.config_args || {}
-        //         );
-        //     });
-        // }
