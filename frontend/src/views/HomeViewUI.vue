@@ -92,9 +92,9 @@ const handleLogout = () => {
                 </div>
 
                 <div @click="handleMonitorProject"
-                    class="cursor-pointer p-3 rounded-2xl border-b-4 border-purple-600 shadow-xl"
+                    class="cursor-pointer p-3 rounded-2xl border-b-4 border-[#d4b109] shadow-xl"
                     style="background-color: var(--card-bg);">
-                    <svg class="w-12 h-12 mx-auto text-purple-400 mb-3 fill-none stroke-current" viewBox="0 0 24 24"
+                    <svg class="w-12 h-12 mx-auto text-[#d4b109] mb-3 fill-none stroke-current" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M12 4.5C7 4.5 2.73 7.5 1 12c1.73 4.5 6 7.5 11 7.5s9.27-3 11-7.5c-1.73-4.5-6-7.5-11-7.5z" />

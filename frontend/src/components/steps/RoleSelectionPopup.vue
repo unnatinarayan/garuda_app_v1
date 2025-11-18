@@ -3,11 +3,11 @@
   <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-gray-800 p-6 rounded-xl w-96 max-w-[90vw]">
       <h3 class="text-lg text-cyan-400 font-semibold mb-4">
-        Assign Roles to {{ userId }}
+        Assign permissions to {{ userId }}
       </h3>
 
       <div v-if="roles.length === 0" class="text-gray-400 text-center py-4">
-        No roles available
+        No permissions available
       </div>
 
       <div v-else class="space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -37,7 +37,7 @@
           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition" 
           @click="save"
         >
-          Save Roles
+          Save Permissions
         </button>
       </div>
     </div>

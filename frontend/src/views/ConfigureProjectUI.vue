@@ -79,7 +79,7 @@ const handleSubmit = async () => {
             return;
         }
     }
-    
+
     try {
         await projectStore.submitProject();
         messageStore.showMessage(
@@ -110,19 +110,19 @@ const nextStep = () => {
         messageStore.showMessage("Please enter a Project Name.", "error");
         return;
     }
-    
+
     // Step 2 validation
     if (currentStep.value === 2 && projectForm.value.users.length === 0) {
         messageStore.showMessage("Please add at least one user.", "error");
         return;
     }
-    
+
     // Step 3 validation
     if (currentStep.value === 3 && projectForm.value.aoiDrafts.filter(a => a.status !== 2).length === 0) {
         messageStore.showMessage("Please define at least one Area of Interest.", "error");
         return;
     }
-    
+
     projectStore.nextStep();
 };
 
@@ -139,7 +139,7 @@ const canSubmit = computed(() => {
     if (!projectName.value || projectForm.value.aoiDrafts.length === 0) {
         return false;
     }
-    
+
     // Check if all active AOIs have subscriptions
     const activeAOIs = projectForm.value.aoiDrafts.filter(aoi => aoi.status !== 2);
     for (const aoi of activeAOIs) {
@@ -148,50 +148,22 @@ const canSubmit = computed(() => {
             return false;
         }
     }
-    
+
     return true;
 });
 </script>
 
 <template>
-    <div class="w-full h-[12vh] p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[8]">
-        <div class="w-full h-[4vh] max-w-6xl mx-auto flex justify-between items-center">
-            <button v-if="currentStep != 1"
-                class="text-cyan-400 hover:text-cyan-300 transition duration-150 py-1 px-2 rounded flex items-center text-sm sm:text-base"
-                @click="goBack">
-                <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block mr-1" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-            </button>
-            <button v-else class="w-5"></button>
-
-            <h1 class="text-lg sm:text-2xl font-bold text-white truncate max-w-[70%]">
+    <div class="w-full h-[12vh] pt-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[8]">
+        <div class="w-full h-[4vh] max-w-6xl mx-auto flex justify-center items-center"
+            :class="{ 'bg-orange-600 text-white': isUpdateMode, 'bg-blue-600 text-white': !isUpdateMode }">
+            <h1 class="text-2xl sm:text-2xl font-bold w-full truncate max-w-[70%]">
                 {{ isUpdateMode ? '' : 'Add New Project' }}
-                <span v-if="projectName && isUpdateMode" class="text-cyan-400">{{ projectName }}</span>
+                <span v-if="projectName && isUpdateMode" class="">{{ projectName }}</span>
             </h1>
-
-            <button v-if="!isFinalStep" @click="nextStep"
-                class="px-3 py-1 text-cyan-400 rounded-lg font-semibold transition duration-150 text-sm">
-                <svg class="w-5 h-5 sm:w-5 sm:h-5 inline-block ml-1" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-            </button>
-            <button v-else @click="handleSubmit"
-                class="px-3 py-1 text-white rounded-lg font-semibold transition duration-150 text-sm"
-                :disabled="!canSubmit"
-                :class="{
-                    'bg-blue-600 hover:bg-blue-700': canSubmit,
-                    'bg-gray-600 opacity-50 cursor-not-allowed': !canSubmit
-                }">
-                {{ isUpdateMode ? 'UPDATE' : 'SUBMIT' }}
-            </button>
         </div>
 
-        <div class="relative mb-2 w-full h-[7vh] px-4 sm:px-6 md:px-8">
+        <div class="relative mb-2 w-full h-[7.5vh] pt-1 px-4 sm:px-6 md:px-8">
             <div class="absolute top-[2vh] left-0 right-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12"
                 :class="{
                     'bg-green-600': isUpdateMode,
@@ -227,7 +199,7 @@ const canSubmit = computed(() => {
 
         <InlineMessage />
     </div>
-    
+
     <div v-if="isDataLoading" class="loading-message">Loading existing project data...</div>
     <div v-else class="configure-project-ui h-[73vh] overflow-y-auto flex-col text-white">
         <div class="w-full max-w-6xl mx-auto h-[69vh] px-4 pb-3 pt-2 relative">
@@ -238,7 +210,7 @@ const canSubmit = computed(() => {
                 <Step4Subscriptions v-if="currentStep === 4" :project-data="projectForm" />
             </div>
         </div>
-        
+
         <div class="w-full h-[2vh] max-w-6xl mt-1 px-4 mx-auto flex justify-between items-center">
             <button v-if="currentStep != 1"
                 class="px-3 py-1 text-white-400 bg-cyan-700 rounded-lg font-semibold transition duration-150 text-sm"
@@ -247,14 +219,22 @@ const canSubmit = computed(() => {
             </button>
             <button v-else class="w-5"></button>
 
+            <button v-if="isUpdateMode && !isFinalStep" @click="handleSubmit"
+                class="px-3 py-1 text-white rounded-lg font-semibold transition duration-150 text-sm"
+                :disabled="!canSubmit" :class="{
+                    'bg-blue-600 hover:bg-blue-700': canSubmit,
+                    'bg-gray-600 opacity-50 cursor-not-allowed': !canSubmit
+                }">
+                Save & Close
+            </button>
+
             <button v-if="!isFinalStep" @click="nextStep"
                 class="px-3 py-1 text-white-100 bg-cyan-500 rounded-lg font-semibold transition duration-150 text-sm">
                 Next
             </button>
             <button v-else @click="handleSubmit"
                 class="px-3 py-1 text-white rounded-lg font-semibold transition duration-150 text-sm"
-                :disabled="!canSubmit"
-                :class="{
+                :disabled="!canSubmit" :class="{
                     'bg-blue-600 hover:bg-blue-700': canSubmit,
                     'bg-gray-600 opacity-50 cursor-not-allowed': !canSubmit
                 }">

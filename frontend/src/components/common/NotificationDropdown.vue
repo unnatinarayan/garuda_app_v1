@@ -152,15 +152,15 @@ const closeOnFocusOut = () => {
                     Alerts
                 </h3>
 
-                <div class="p-2 text-xs">
-                    <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white text-red-500">
+                <div class="p-1.5 border-red-600 bg-red-600 rounded-lg text-xs">
+                    <a @click="isDropdownOpen = false" class="cursor-pointer hover:text-white text-white">
                         Close
                     </a>
                 </div>
             </div>
 
             <div class="max-h-80 overflow-y-auto">
-                <div v-if="totalAlerts === 0" class="p-4 text-gray-400 text-center">
+                <div v-if="totalAlerts === 0" class="p-4 text-gray-400 text-left">
                     No new alerts.
                 </div>
 

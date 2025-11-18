@@ -17,6 +17,7 @@ const apiClient = ApiClient.getInstance();
 const showNavbar = ref(false);
 const eventSource = ref(null);
 
+
 const startSSE = (userId) => {
     if (eventSource.value) {
         eventSource.value.close();
@@ -125,7 +126,7 @@ const profileInitials = computed(() => {
       <RouterView />
     </main>
 
-    <footer class="app-footer flex-shrink-0 bg-gray-700 h-[4vh] flex items-center justify-center">
+    <footer class="app-footer bg-gray-700 flex-shrink-0 h-[4vh] flex items-center justify-center">
       <h1 class="text-center text-xs font-bold text-white">Copyright &copy; 2025 VEDAS SAC ISRO</h1>
     </footer>
   </div>
@@ -163,4 +164,7 @@ body {
     }
 }
 
+
 </style>
+
+

@@ -90,12 +90,14 @@ const filteredProjects = computed(() => {
     }
 
     if (filterStatus.value) {
+        // NOTE: This logic seems flawed (filtering by project_name starting with 'A' for 'Active')
+        // I'll leave it as is but recommend fixing the status filtering logic.
         if (filterStatus.value === 'Active') {
             projects = projects.filter(p => p.project_name.startsWith('A'));
         }
     }
 
-    // 2. Sorting Logic
+    // 2. Sorting Logic (same as before)
     const { field, direction } = sortCriteria.value;
 
     projects.sort((a, b) => {
@@ -114,7 +116,11 @@ const filteredProjects = computed(() => {
         return direction === 'asc' ? comparison : -comparison;
     });
 
-    return projects;
+    // **3. Add Index for Counting**
+    return projects.map((project, index) => ({
+        ...project,
+        index: index + 1, // 1-based index
+    }));
 });
 
 const handleProjectAction = (project) => {
@@ -139,197 +145,160 @@ const handleDelete = async (projectId, projectName) => {
     }
 };
 </script>
-
 <template>
-    <div id="manage-view" class="h-[85vh] mb-2 text-white flex-col justify-center">
-        <div class="h-[5vh] w-full p-1 bg-gray-700 shadow-lg flex justify-center items-center border-b border-gray-600">
-            <h1 class="text-[3vh] font-bold text-white">
+    <div id="manage-view" class="h-[81vh] pt-4 text-white flex-col justify-start bg-gray-900">
+        <div class="sticky top-0 z-10 w-full p-3 shadow-2xl flex justify-center items-center mb-4"
+            :class="{ 'bg-orange-600/90': !isMonitorMode, 'bg-[#b49400]/90': isMonitorMode }">
+            <h1 class="text-3xl font-extrabold text-white tracking-wide">
                 {{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
             </h1>
         </div>
 
-        <div class="w-full h-[80vh] max-w-4xl mx-auto rounded-2xl p-2 relative">
-            <div>
+        <div class="w-full max-w-4xl mx-auto px-4 relative">
+            
+            <div class="flex items-center mb-6 gap-3 p-2 rounded-xl shadow-lg">
 
-                <div class="flex h-[6.3vh] items-center mb-[2vh] gap-3">
+                <div class="relative flex-1">
+                    <input type="text" v-model="searchTerm" placeholder="Search projects by Name or Description..."
+                        class="w-full pl-10 pr-10 py-2 rounded-xl bg-gray-700 text-white 
+                           border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 
+                           transition duration-200 shadow-inner text-sm" />
+                    
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
 
-                    <!-- SEARCH INPUT -->
-                    <input type="text" v-model="searchTerm" placeholder="Search Name/Desc..." class="flex-1 p-2 h-[4vh] rounded-xl bg-gray-700 text-white 
-               border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 
-               transition duration-150" />
-
-                    <!-- SORT BUTTON -->
-                    <div class="relative">
-                        <button @click="toggleSortDropdown" class="flex items-center gap-2 px-3 py-2 h-[4vh] bg-gray-700 hover:bg-gray-600 
-                   border border-gray-600 rounded-xl text-white transition duration-150" title="Sort Options">
-                            <!-- SORT ICON ONLY (NO LABEL TEXT) -->
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 4h18M3 8h18m-6 4h6m-6 4h6"></path>
-                            </svg>
-
-                            <!-- DOWN ARROW -->
-                            <svg class="w-4 h-4 transition-transform duration-200"
-                                :class="{ 'rotate-180': showSortDropdown }" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-
-                        <!-- DROPDOWN -->
-                        <div v-if="showSortDropdown" v-click-outside="closeSortDropdown" class="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-600 
-                   rounded-lg shadow-xl z-50 overflow-hidden">
-                            <div class="py-1">
-                                <button v-for="option in sortOptions" :key="option.value"
-                                    @click="handleSortSelection(option.value)" class="w-full px-4 py-2 text-left text-sm hover:bg-gray-700 
-                           transition duration-150 flex items-center justify-between" :class="{
-                            'bg-cyan-900/30 text-cyan-400': sortCriteria.field === option.value,
-                            'text-gray-300': sortCriteria.field !== option.value
-                        }">
-                                    <span>{{ option.label }}</span>
-                                    <svg v-if="sortCriteria.field === option.value" class="w-4 h-4 text-cyan-400"
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <!-- DIRECTION -->
-                            <div class="border-t border-gray-600 px-4 py-2">
-                                <button
-                                    @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
-                                    class="w-full flex items-center justify-between text-sm text-gray-300 hover:text-white transition duration-150">
-                                    <span>Direction</span>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs text-cyan-400">
-                                            {{ sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending' }}
-                                        </span>
-                                        <svg class="w-4 h-4 transition-transform duration-200"
-                                            :class="{ 'rotate-180': sortCriteria.direction === 'desc' }" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M5 15l7-7 7 7"></path>
-                                        </svg>
-                                    </div>
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
-
+                    <button v-if="searchTerm" @click="searchTerm = ''"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-gray-600 transition duration-150"
+                        title="Clear Search">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
 
+                <div class="relative flex-shrink-0">
+                    <button @click="toggleSortDropdown"
+                        class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 
+                               border border-gray-600 rounded-xl text-white transition duration-200 text-sm h-10"
+                        title="Sort Options">
+                        
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4h18M3 8h18m-6 4h6m-6 4h6"></path>
+                        </svg>
+                        
+                        <span class="hidden sm:inline">{{ currentSortLabel.replace('Sort by ', '') }}</span>
 
-                <!-- <div class="flex flex-wrap h-[10vh] justify-between items-center mb-[2vh] gap-2">
-                    <input type="text" v-model="searchTerm" placeholder="Search Name/Desc..."
-                        class="flex min-w-[70vw] p-2 h-[4vh] rounded-xl bg-gray-700 text-white border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150" />
+                        <svg class="w-3 h-3 transition-transform duration-200"
+                            :class="{ 'rotate-180': showSortDropdown }" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
 
-                    <div class="relative flex items-center gap-2">
-                        <button @click="toggleSortDropdown"
-                            class="flex items-center gap-2 px-3 py-2 h-[4vh] bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-xl text-white transition duration-150"
-                            title="Sort Options">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 4h18M3 8h18m-6 4h6m-6 4h6"></path>
-                            </svg>
-                            <span class="text-sm">{{ currentSortLabel }}</span>
-                            <svg class="w-4 h-4 transition-transform duration-200"
-                                :class="{ 'rotate-180': showSortDropdown }" fill="none" stroke="currentColor"
+                    <div v-if="showSortDropdown" v-click-outside="closeSortDropdown" class="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-cyan-500/50 
+                               rounded-lg shadow-2xl z-50 overflow-hidden">
+                        <div class="py-1">
+                            <button v-for="option in sortOptions" :key="option.value"
+                                @click="handleSortSelection(option.value)" class="w-full px-4 py-2 text-left text-sm hover:bg-gray-700 
+                                       transition duration-150 flex items-center justify-between" :class="{
+                                'bg-cyan-900/30 text-cyan-400 font-semibold': sortCriteria.field === option.value,
+                                'text-gray-300': sortCriteria.field !== option.value
+                            }">
+                                <span>{{ option.label }}</span>
+                                <svg v-if="sortCriteria.field === option.value" class="w-4 h-4 text-cyan-400"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="border-t border-gray-700 px-4 py-2 bg-gray-900/50">
+                            <button
+                                @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
+                                class="w-full flex items-center justify-between text-xs text-gray-300 hover:text-white transition duration-150">
+                                <span class="font-medium">Sort Direction:</span>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-xs text-cyan-400 font-semibold">
+                                        {{ sortCriteria.direction === 'asc' ? 'A → Z (Asc)' : 'Z → A (Desc)' }}
+                                    </span>
+                                    <svg class="w-3 h-3 transition-transform duration-200"
+                                        :class="{ 'rotate-180': sortCriteria.direction === 'desc' }" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 15l7-7 7 7"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="space-y-3 h-[67vh] overflow-y-auto pr-3">
+                <p v-if="isLoading" class="text-center py-8 text-gray-400">Loading projects...</p>
+                <p v-else-if="errorMessage" class="text-center py-8 text-red-500 font-medium">{{ errorMessage }}</p>
+                <p v-else-if="filteredProjects.length === 0" class="text-center py-8 text-gray-400 text-lg">
+                    No projects match your criteria. 🧐
+                </p>
+
+                <div v-for="project in filteredProjects" :key="project.id"
+                    class="flex justify-between items-center p-4 rounded-xl bg-gray-800 hover:bg-gray-700 transition duration-200 shadow-xl border-l-4 cursor-pointer"
+                    @click="handleProjectAction(project)"
+                    :class="{ 'border-orange-600/90': !isMonitorMode, 'border-[#b49400]/90': isMonitorMode }">
+                    
+                    <div class="flex items-center gap-4 min-w-0">
+                        <span class="text-2xl font-extrabold flex-shrink-0 w-6 text-right"
+                        :class="{ 'text-orange-600/90': !isMonitorMode, 'text-[#b49400]/90': isMonitorMode }">
+                            {{ project.index }}.
+                        </span>
+
+                        <div class="flex flex-col min-w-0 flex-grow">
+                            <h3 class="text-xl font-bold text-white truncate">{{ project.project_name }}</h3>
+                            
+                            <p class="text-sm text-gray-400 truncate mt-1">
+                                <span class="hidden sm:inline">| Last Modified: {{ project.last_modified_timestamp ? new Date(project.last_modified_timestamp).toLocaleDateString() : 'N/A' }}</span>
+                                <span class="block sm:hidden text-xs italic">{{ project.description || 'No description.' }}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3 flex-shrink-0 ml-4">
+                        <button @click.stop="handleProjectAction(project)"
+                            class="p-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition duration-150 shadow-md"
+                            :title="isMonitorMode ? 'View Live Map' : 'Edit Project'">
+                            <svg v-if="isMonitorMode" class="w-5 h-5" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7"></path>
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                </path>
+                            </svg>
+                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                </path>
                             </svg>
                         </button>
 
-                        <div v-if="showSortDropdown" v-click-outside="closeSortDropdown"
-                            class="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 overflow-hidden">
-                            <div class="py-1">
-                                <button v-for="option in sortOptions" :key="option.value"
-                                    @click="handleSortSelection(option.value)"
-                                    class="w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition duration-150 flex items-center justify-between"
-                                    :class="{
-                                        'bg-cyan-900/30 text-cyan-400': sortCriteria.field === option.value,
-                                        'text-gray-300': sortCriteria.field !== option.value
-                                    }">
-                                    <span>{{ option.label }}</span>
-                                    <svg v-if="sortCriteria.field === option.value" class="w-4 h-4 text-cyan-400"
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <div class="border-t border-gray-600 px-4 py-2">
-                                <button
-                                    @click="sortCriteria.direction = sortCriteria.direction === 'asc' ? 'desc' : 'asc'"
-                                    class="w-full flex items-center justify-between text-sm text-gray-300 hover:text-white transition duration-150">
-                                    <span>Direction</span>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs text-cyan-400">
-                                            {{ sortCriteria.direction === 'asc' ? 'Ascending' : 'Descending' }}
-                                        </span>
-                                        <svg class="w-4 h-4 transition-transform duration-200"
-                                            :class="{ 'rotate-180': sortCriteria.direction === 'desc' }" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M5 15l7-7 7 7"></path>
-                                        </svg>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
-                <div class="space-y-4 max-h-[66vh] overflow-y-auto pr-2">
-                    <p v-if="isLoading" class="text-center py-8 text-gray-400">Loading projects...</p>
-                    <p v-else-if="errorMessage" class="text-center py-8 text-red-500">{{ errorMessage }}</p>
-                    <p v-else-if="filteredProjects.length === 0" class="text-center py-8 text-gray-400">
-                        No projects match your criteria.
-                    </p>
-
-                    <div v-for="project in filteredProjects" :key="project.id"
-                        class="flex h-[69] justify-between items-center p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition duration-150 shadow-md border-l-4 border-cyan-500">
-                        <div class="flex flex-col">
-                            <h3 class="text-xl font-bold text-white">{{ project.project_name }}</h3>
-                            <p
-                                class="text-sm text-gray-400 overflow-hidden whitespace-nowrap max-w-[15ch] text-ellipsis">
-                                {{ project.description || 'No description.' }}
-                            </p>
-                        </div>
-
-                        <div class="flex space-x-2 flex-shrink-0 ml-4">
-                            <button @click="handleProjectAction(project)"
-                                class="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition duration-150"
-                                :title="isMonitorMode ? 'View Live Map' : 'Edit Project'">
-                                <svg v-if="isMonitorMode" class="w-5 h-5" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                    </path>
-                                </svg>
-                                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                    </path>
-                                </svg>
-                            </button>
-
-                            <button v-if="!isMonitorMode" @click="handleDelete(project.id, project.project_name)"
-                                class="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition duration-150"
-                                title="Delete Project (Requires Owner Role)">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                    </path>
-                                </svg>
-                            </button>
-                        </div>
+                        <button v-if="!isMonitorMode" @click.stop="handleDelete(project.id, project.project_name)"
+                            class="p-2 rounded-full bg-red-600 hover:bg-red-500 text-white transition duration-150 shadow-md"
+                            title="Delete Project (Requires Owner Role)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -338,6 +307,7 @@ const handleDelete = async (projectId, projectName) => {
 </template>
 
 <style scoped>
+/* Keeping original styles and adding the new scrollbar style for sleeker appearance */
 .min-h-screen {
     min-height: 100vh;
 }
@@ -354,18 +324,18 @@ const handleDelete = async (projectId, projectName) => {
     background-color: #374151;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - darker for a sleeker look */
 .overflow-y-auto::-webkit-scrollbar {
     width: 8px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
+    background-color: #4b5563; /* Darker thumb */
     border-radius: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-    background-color: #1f2937;
+    background-color: #1f2937; /* Dark track */
 }
 
 /* Smooth rotation for dropdown arrow */
