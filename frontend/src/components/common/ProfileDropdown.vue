@@ -12,16 +12,12 @@ const showDropdown = ref(false);
 const showProfileModal = ref(false);
 const dropdownRef = ref(null);
 
-// User profile data
+// User profile data - simplified to only user details
 const userProfile = ref({
     userId: '',
     username: '',
     email: '',
     contactNo: '',
-    totalProjects: 0,
-    ownedProjects: 0,
-    analystProjects: 0,
-    viewerProjects: 0,
 });
 
 const isLoadingProfile = ref(false);
@@ -61,10 +57,6 @@ const fetchUserProfile = async () => {
             username: data.username,
             email: data.email || 'Not provided',
             contactNo: data.contactno || 'Not provided',
-            totalProjects: data.project_stats.total || 0,
-            ownedProjects: data.project_stats.owned || 0,
-            analystProjects: data.project_stats.analyst || 0,
-            viewerProjects: data.project_stats.viewer || 0,
         };
     } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -171,13 +163,13 @@ onBeforeUnmount(() => {
              class="fixed inset-0 bg-black bg-opacity-70 z-[30000] flex justify-center items-center p-4"
              @click.self="closeProfile">
             
-            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl relative border-2 border-cyan-500 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg relative border-2 border-cyan-500 max-h-[90vh] overflow-y-auto">
                 
                 <!-- Close Button -->
                 <button 
                     @click="closeProfile"
-                    class="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors">
-                    &times;
+                    class="absolute top-3 right-3 text-red-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors z-10">
+                    Close
                 </button>
 
                 <!-- Loading State -->
@@ -206,14 +198,12 @@ onBeforeUnmount(() => {
                 <div v-else class="p-6">
                     
                     <!-- Header with Avatar -->
-                    <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-700">
-                        <div class="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                    <div class="flex flex-col items-center mb-6 pb-6 border-b border-gray-700">
+                        <div class="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-lg mb-4">
                             {{ profileInitials }}
                         </div>
-                        <div class="flex-1">
-                            <h2 class="text-2xl font-bold text-white">{{ userProfile.username }}</h2>
-                            <p class="text-sm text-gray-400 mt-1">User ID: {{ userProfile.userId }}</p>
-                        </div>
+                        <h2 class="text-2xl font-bold text-white text-center">{{ userProfile.username }}</h2>
+                        <p class="text-sm text-gray-400 mt-1">{{ userProfile.userId }}</p>
                     </div>
 
                     <!-- Contact Information -->
@@ -221,57 +211,55 @@ onBeforeUnmount(() => {
                         <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            Contact Information
+                            Account Information
                         </h3>
-                        <div class="bg-gray-700 rounded-lg p-4 space-y-3">
+                        <div class="bg-gray-700 rounded-lg p-4 space-y-4">
+                            <!-- User ID -->
                             <div class="flex items-start">
-                                <span class="text-gray-400 w-24 text-sm">Email:</span>
-                                <span class="text-white font-medium flex-1">{{ userProfile.email }}</span>
+                                <svg class="w-5 h-5 mr-3 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <span class="text-gray-400 text-xs block mb-1">User ID</span>
+                                    <span class="text-white font-medium">{{ userProfile.userId }}</span>
+                                </div>
                             </div>
-                            <div class="flex items-start">
-                                <span class="text-gray-400 w-24 text-sm">Phone:</span>
-                                <span class="text-white font-medium flex-1">{{ userProfile.contactNo }}</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Project Statistics -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                            Project Statistics
-                        </h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-lg p-4 shadow-lg">
-                                <div class="text-3xl font-bold text-white mb-1">{{ userProfile.totalProjects }}</div>
-                                <div class="text-cyan-100 text-sm">Total Projects</div>
+                            <!-- Email -->
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 mr-3 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <span class="text-gray-400 text-xs block mb-1">Email</span>
+                                    <span class="text-white font-medium break-all">{{ userProfile.email }}</span>
+                                </div>
                             </div>
-                            <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-4 shadow-lg">
-                                <div class="text-3xl font-bold text-white mb-1">{{ userProfile.ownedProjects }}</div>
-                                <div class="text-purple-100 text-sm">As Owner</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-4 shadow-lg">
-                                <div class="text-3xl font-bold text-white mb-1">{{ userProfile.analystProjects }}</div>
-                                <div class="text-blue-100 text-sm">As Analyst</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-4 shadow-lg">
-                                <div class="text-3xl font-bold text-white mb-1">{{ userProfile.viewerProjects }}</div>
-                                <div class="text-green-100 text-sm">As Viewer</div>
+
+                            <!-- Phone -->
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 mr-3 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <span class="text-gray-400 text-xs block mb-1">Phone</span>
+                                    <span class="text-white font-medium">{{ userProfile.contactNo }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Close Button -->
-                    <button 
+                    <!-- <button 
                         @click="closeProfile"
-                        class="mt-6 w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg">
-                        Close Profile
-                    </button>
+                        class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg">
+                        Close
+                    </button> -->
                 </div>
             </div>
         </div>
@@ -297,7 +285,8 @@ onBeforeUnmount(() => {
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
 }
-.profile{
+
+.profile {
     border-radius: 100%;
 }
 </style>

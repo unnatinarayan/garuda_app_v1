@@ -46,7 +46,7 @@ const handleAoiDrawn = (data) => {
     currentAoiGeometry.value = data.geometry;
     currentAoiType.value = data.geometry.type;
     currentAoiBuffer.value = 100;
-    
+
     showDecisionModal.value = true;
 };
 
@@ -229,7 +229,7 @@ const removeAuxField = (index) => {
 // ==================== Remove AOI ====================
 const removeAOI = (clientAoiId) => {
     const aoi = props.projectData.aoiDrafts.find(a => a.clientAoiId === clientAoiId);
-    
+
     if (aoi) {
         if (aoi.dbId) {
             // CRITICAL FIX: For existing AOIs, mark for deletion instead of removing
@@ -243,17 +243,17 @@ const removeAOI = (clientAoiId) => {
                 props.projectData.aoiDrafts.splice(index, 1);
             }
         }
-        
+
         messageStore.showMessage(`AOI removed`, "info");
     }
 };
 
-const requiresBuffer = computed(() => 
+const requiresBuffer = computed(() =>
     ['Point', 'LineString'].includes(currentAoiType.value)
 );
 
 // CRITICAL FIX: Filter out soft-deleted AOIs for display
-const visibleAoiDrafts = computed(() => 
+const visibleAoiDrafts = computed(() =>
     props.projectData.aoiDrafts.filter(aoi => aoi.status !== 2)
 );
 </script>
@@ -261,13 +261,8 @@ const visibleAoiDrafts = computed(() =>
 <template>
     <div>
         <div class="min-h-[50vh]">
-            <MapVisualization 
-                @aoi-drawn="handleAoiDrawn" 
-                :aois-to-display="visibleAoiDrafts"
-                :accumulated-geometries="accumulatedGeometries"
-                :is-monitor-mode="false" 
-                ref="mapVizRef" 
-            />
+            <MapVisualization @aoi-drawn="handleAoiDrawn" :aois-to-display="visibleAoiDrafts"
+                :accumulated-geometries="accumulatedGeometries" :is-monitor-mode="false" ref="mapVizRef" />
         </div>
 
         <h4 class="text-lg font-semibold mt-2 text-cyan-400" style="font-size: 2vh;">
@@ -284,7 +279,8 @@ const visibleAoiDrafts = computed(() =>
                         </span>
                         {{ aoi.name }}
                         <span class="text-sm ml-2 text-yellow-400">
-                            ({{ aoi.geomProperties?.geometryCount || 1 }} polygon{{ aoi.geomProperties?.geometryCount > 1 ? 's' : '' }})
+                            ({{ aoi.geomProperties?.geometryCount || 1 }} polygon{{ aoi.geomProperties?.geometryCount >
+                            1 ? 's' : '' }})
                         </span>
                     </div>
                     <div>
@@ -308,16 +304,24 @@ const visibleAoiDrafts = computed(() =>
             <div v-if="showDecisionModal"
                 class="fixed inset-0 bg-black bg-opacity-70 z-[100000] flex justify-center items-center p-4">
                 <div class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl p-6 text-white">
-                    <h3 class="text-2xl font-bold mb-4 text-cyan-400">
-                        Polygon Drawn ({{ accumulatedGeometries.length + 1 }})
-                    </h3>
+                    <div class="flex items-center justify-between">
+    <p class="text-xl font-bold text-cyan-400">
+        Polygon ({{ accumulatedGeometries.length + 1 }})
+    </p>
+
+    <button 
+        @click="cancelDecision"
+        class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded-md text-sm transition"
+    >
+        Cancel
+    </button>
+</div>
 
                     <div v-if="requiresBuffer" class="form-group mb-4">
                         <label class="block text-gray-400 mb-1">
                             Buffer Distance (meters):
                         </label>
-                        <input type="number" v-model.number="currentAoiBuffer" 
-                            min="1" step="10" placeholder="100"
+                        <input type="number" v-model.number="currentAoiBuffer" min="1" step="10" placeholder="100"
                             class="w-full p-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-400 focus:outline-none">
                     </div>
 
@@ -328,16 +332,13 @@ const visibleAoiDrafts = computed(() =>
                     <div class="flex flex-col gap-3">
                         <button @click="continueDrawing"
                             class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition">
-                            ➕ Draw Another Polygon for This AOI
+                            Add New Polygon
                         </button>
                         <button @click="proceedToNaming"
                             class="w-full px-4 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-semibold transition">
-                            ✏️ Name This AOI & Finalize
+                            Finish
                         </button>
-                        <button @click="cancelDecision"
-                            class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition">
-                            Cancel
-                        </button>
+
                     </div>
                 </div>
             </div>
@@ -347,7 +348,8 @@ const visibleAoiDrafts = computed(() =>
         <Teleport to="body">
             <div v-if="showNameModal"
                 class="fixed inset-0 bg-black bg-opacity-70 z-[100000] flex justify-center items-center p-4">
-                <div class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl p-6 text-white max-h-[90vh] overflow-y-auto">
+                <div
+                    class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl p-6 text-white max-h-[90vh] overflow-y-auto">
                     <h3 class="text-2xl font-bold mb-4 text-cyan-400">
                         Name Your AOI ({{ accumulatedGeometries.length }} Polygons)
                     </h3>
@@ -356,8 +358,7 @@ const visibleAoiDrafts = computed(() =>
                         <label class="block text-gray-400 mb-1">
                             AOI Name: <span class="text-red-400">*</span>
                         </label>
-                        <input type="text" v-model="currentAoiName" 
-                            placeholder="e.g., Andaman & Nicobar Islands"
+                        <input type="text" v-model="currentAoiName" placeholder="e.g., Andaman & Nicobar Islands"
                             class="w-full p-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-400 focus:outline-none">
                     </div>
 
@@ -380,7 +381,7 @@ const visibleAoiDrafts = computed(() =>
 
                         <button @click="showNewAuxFields = true" v-if="!showNewAuxFields"
                             class="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg w-full justify-center">
-                            ➕ Add Custom Field
+                            Add Custom Field
                         </button>
 
                         <div v-if="showNewAuxFields" class="p-3 bg-gray-700 rounded-lg border border-gray-600">
@@ -404,8 +405,7 @@ const visibleAoiDrafts = computed(() =>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6">
-                        <button @click="cancelNaming"
-                            class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">
+                        <button @click="cancelNaming" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">
                             Cancel
                         </button>
                         <button @click="finalizeAOI"

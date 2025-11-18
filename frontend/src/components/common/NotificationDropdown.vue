@@ -1,4 +1,4 @@
-<!-- NotificationDropdown.vue -->
+<!-- frontend/src/components/common/NotificationDropdown.vue -->
 <script setup>
 import { ref, computed, nextTick } from 'vue';
 import { useProjectStore } from '@/stores/ProjectStore.js';
@@ -12,7 +12,7 @@ const dropdownRef = ref(null);
 const isDropdownOpen = ref(false);
 const expandedAlertIds = ref([]);
 
-// Computed: Alerts list from the store (newest first by default due to lPush/unshift)
+// Computed: Alerts list from the store
 const alerts = computed(() => projectStore.activeAlerts);
 const totalAlerts = computed(() => projectStore.totalAlerts);
 
@@ -46,32 +46,20 @@ const toggleExpand = (alertId) => {
  * Handles marking an alert as read and removing it from Redis and the local store.
  * @param {Object} alert The alert object to mark as read.
  */
-
-
-
-// NotificationDropdown.vue
-
 const markAsRead = async (alert) => {
-    // 1. Store a temporary reference of the alert we are removing
     const alertToRevert = alert;
 
-    // 2. Optimistic Update (Remove locally)
+    // Optimistic Update (Remove locally)
     projectStore.activeAlerts = projectStore.activeAlerts.filter(a => a.id !== alert.id);
 
     try {
-        // 3. Call the store action, which handles the API call and Redis deletion
         await projectStore.markAlertAsRead(alert.id);
-        // Success: Alert is permanently gone from this user's Redis cache.
-
     } catch (error) {
         console.error("Failed to mark alert as read on server:", error);
 
-
-        // If the store action fails, it's safer to re-fetch/reload the list, but for a simple fix:
         if (!projectStore.activeAlerts.some(a => a.id === alertToRevert.id)) {
             // Re-add only if it's not somehow back in the list
             projectStore.activeAlerts.unshift(alertToRevert);
-            // Note: This relies on the alert structure being available locally.
         }
     }
 };
@@ -100,6 +88,8 @@ const handleAlertClick = (alert) => {
         isDropdownOpen.value = false; // Close dropdown after navigation
     }
 };
+
+// Function remains functionally the same, processing the 'message' field (which contains 'content')
 const normalizeMessage = (msg) => {
     if (!msg) return {};
 
@@ -180,9 +170,9 @@ const closeOnFocusOut = () => {
 
                         <div @click="handleNavigationClick(alert)" class="flex-grow pr-3 cursor-pointer">
                             <p class="text-sm font-bold text-cyan-100 break-words">
-                                <span class="text-red">{{ alert.project_name || alert.projectId }}</span>: <span
-                                    class="text-olive"> {{ alert.aoi_name || alert.aoiId }} </span> has an
-                                Alert for <span class="text-green"> {{ alert.algoId }}</span>
+                                <span class="text-red">{{ alert.project_name || alert.projectId }}</span>:
+                                <span class="text-olive">{{ alert.aoi_name || alert.aoiId }}</span> has an
+                                Alert for <span class="text-green">{{ alert.channelName }}</span>
                             </p>
                             <p class="text-xs text-start text-white mt-1 ">
                                 {{ new Date(alert.timestamp).toLocaleTimeString() }} {{ new

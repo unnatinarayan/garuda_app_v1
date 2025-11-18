@@ -3,10 +3,10 @@
 import { AlertModel } from '../models/AlertModel.js';
 
 /**
- * Defines the simplified payload structure from the API now using mapping_id.
+ * Defines the simplified payload structure from the API now using subscription_id.
  * @typedef {object} NewAlertPayload
- * @property {number} mapping_id - FK to aoi_algorithm_mapping.id
- * @property {object} message - The alert message JSONB.
+ * @property {number} subscription_id - FK to subscription.id
+ * @property {object} content - The alert content JSONB.
  */
 
 
@@ -23,14 +23,14 @@ export class AlertsService {
     async recordNewAlert(payload) {
 
         // Input validation (basic check)
-        if (!payload.mapping_id || !payload.message) {
-            throw new Error("Missing required fields for alert: mapping_id or message.");
+        if (!payload.subscription_id || !payload.content) {
+            throw new Error("Missing required fields for alert: subscription_id or content.");
         }
 
         // Create an instance of the model
         const newAlert = new AlertModel({
-            mapping_id: payload.mapping_id,
-            message: payload.message,
+            subscription_id: payload.subscription_id,
+            content: payload.content,
         });
 
         // Save the alert to the database

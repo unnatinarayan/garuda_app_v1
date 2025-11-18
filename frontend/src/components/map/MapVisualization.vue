@@ -88,6 +88,17 @@ const handleFullscreenChange = () => {
     }
 };
 
+const disableAllDrawingTools = () => {
+    if (!drawControlRef.value || !map.value) return;
+
+    const modes = drawControlRef.value._toolbars.draw._modes;
+    Object.values(modes).forEach(mode => {
+        if (mode.handler && mode.handler.enabled()) {
+            mode.handler.disable();
+        }
+    });
+};
+
 const initializeMap = () => {
     if (!mapDiv.value) return;
 
@@ -167,6 +178,8 @@ const setupDrawingControls = () => {
 
     map.value.on(L.Draw.Event.DRAWSTOP, (e) => {
         // User cancelled drawing - do nothing
+        
+        disableAllDrawingTools();
         initializeMap();
     });
 
@@ -491,8 +504,9 @@ watch(() => props.accumulatedGeometries, () => {
 
 watch(() => props.aoisToDisplay, (newAois) => {
     if (map.value && newAois) {
+        disableAllDrawingTools();
         loadExistingAOIs(newAois, false);
-        initializeMap();
+        // initializeMap();
     }
 }, { deep: true, immediate: true });
 

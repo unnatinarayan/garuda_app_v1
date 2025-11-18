@@ -19,35 +19,35 @@ export class AlertsController {
     initializeRoutes() {
         // POST /api/alerts - Endpoint to insert a new alert
         this.router.post('/', this.recordAlert);
-
     }
 
     /**
      * Express handler to record a new alert based on the request body.
-     * Expects: { mapping_id: number, message: object }
+     * Expects: { subscription_id: number, content: object } // CHANGED
      */
     recordAlert = async (req, res, next) => {
         try {
             const payload = req.body;
-            // Payload should now only contain mapping_id and message
-            if (!payload.mapping_id || !payload.message) {
-                 return res.status(400).json({ error: 'Missing required fields: mapping_id or message.' });
+            
+            // CHANGED: Validation now checks for subscription_id and content
+            if (!payload.subscription_id || !payload.content) {
+                 return res.status(400).json({ error: 'Missing required fields: subscription_id or content.' });
             }
 
             const newAlert = await this.alertsService.recordNewAlert(payload);
 
+            // CHANGED: Response body now uses subscription_id and content
             res.status(201).json({
                 message: 'Alert successfully recorded.',
                 alert: {
                     id: newAlert.id,
-                    mapping_id: newAlert.mappingId,
-                    message: newAlert.message,
+                    subscription_id: newAlert.subscriptionId, // CHANGED
+                    content: newAlert.content,                 // CHANGED
                     alert_timestamp: newAlert.alertTimestamp
                 }
             });
 
         } catch (error) {
-            // Pass the error to the Express error handler middleware
             console.error('Error in recordAlert:', error);
             const errorMessage = (error).message;
             // Use 400 for bad data (missing fields, invalid FKs)

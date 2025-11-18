@@ -1,7 +1,9 @@
 // api/ApiClient.js
 import axios from 'axios';
+
 /**
  * ApiClient: Manages all API calls, including setting headers for authentication.
+ * Updated for subscription-based flow.
  */
 export class ApiClient {
     client;
@@ -53,9 +55,14 @@ export class ApiClient {
     }
 
     async userExists(userId) {
-    const response = await this.client.get(`/auth/exists/${userId}`);
-    return response.data.exists;
+        const response = await this.client.get(`/auth/exists/${userId}`);
+        return response.data.exists;
+    }
+    async getAllRoles() {
+    const response = await this.client.get('/projects/roles');
+    return response.data;
 }
+
 
     // --- Project Endpoints ---
     async createProject(bundle) {
@@ -66,8 +73,9 @@ export class ApiClient {
         return this.client.put(`/projects/${projectId}`, bundle);
     }
 
-    async getAlgorithmCatalogue() {
-        const response = await this.client.get('/projects/algorithms');
+    // NEW: Get alert channel catalogue
+    async getAlertChannelCatalogue() {
+        const response = await this.client.get('/projects/alert-channels');
         return response.data;
     }
     
@@ -86,10 +94,10 @@ export class ApiClient {
     }
 
     async getProjectAlerts(projectId, aoiId = null) {
-    const params = {};
-    if (aoiId) params.aoiId = aoiId;
+        const params = {};
+        if (aoiId) params.aoiId = aoiId;
 
-    const response = await this.client.get(`/projects/${projectId}/alerts`, { params });
-    return response.data; // returns { alerts, timeRange }
-}
+        const response = await this.client.get(`/projects/${projectId}/alerts`, { params });
+        return response.data; // returns { alerts, timeRange }
+    }
 }

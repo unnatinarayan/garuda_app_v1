@@ -1,4 +1,4 @@
-<!-- frontend/src/components/map/AoiVizPanel.vue -->
+<!-- frontend/src/components/map/AoiVizPanel.vue - COMPLETE WITH DEBUGGING -->
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Highcharts from 'highcharts';
@@ -6,23 +6,17 @@ import Highcharts from 'highcharts';
 const props = defineProps({
   isVisible: Boolean,
   projectId: [Number, String],
-  allAois: { type: Array, default: () => [] },
+  selectedAoi: { type: Object, default: null },
   projectAlerts: { type: Array, default: () => [] },
   alertTimeRange: { type: Object, default: () => ({ from: null, to: null }) }
 });
 
-const emit = defineEmits(['close', 'refetch-alerts']);
+const emit = defineEmits(['close']);
 
 // --- STATE ---
-const selectedAoiIds = ref([]);
-const selectedAlgoIds = ref([]);
-const dateFilter = ref({ 
-    from: null, 
-    to: null 
-});
-
-const ALGO_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-const algoColorMap = ref({});
+const selectedChannelIds = ref([]);
+const CHANNEL_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const channelColorMap = ref({});
 
 const chartElement = ref(null);
 let chartInstance = null;
@@ -33,98 +27,99 @@ const isLoadingChart = ref(false);
 
 // --- COMPUTED DATA ---
 
-// Get unique algorithms across all AOIs with color assignment
-const uniqueAlgorithms = computed(() => {
-    const algos = new Map();
+// Get unique alert channels for the selected AOI
+const availableChannels = computed(() => {
+    if (!props.selectedAoi || !props.selectedAoi.subscriptions) {
+        console.log('[AoiVizPanel] No selectedAoi or subscriptions');
+        return [];
+    }
+    
+    const channels = new Map();
     let colorIndex = 0;
     
-    props.allAois.forEach(aoi => {
-        if (aoi.mappedAlgorithms && Array.isArray(aoi.mappedAlgorithms)) {
-            aoi.mappedAlgorithms.forEach(algo => {
-                if (!algos.has(algo.algo_id)) {
-                    const color = ALGO_COLORS[colorIndex % ALGO_COLORS.length];
-                    algos.set(algo.algo_id, { 
-                        algo_id: algo.algo_id,
-                        description: algo.description || algo.algo_id,
-                        color: color
-                    });
-                    algoColorMap.value[algo.algo_id] = color;
-                    colorIndex++;
-                }
+    props.selectedAoi.subscriptions.forEach(sub => {
+        if (!channels.has(sub.channelId)) {
+            const color = CHANNEL_COLORS[colorIndex % CHANNEL_COLORS.length];
+            channels.set(sub.channelId, { 
+                channelId: sub.channelId,
+                channelName: sub.channelName,
+                category: sub.category,
+                color: color
             });
+            channelColorMap.value[sub.channelId] = color;
+            colorIndex++;
         }
     });
     
-    return Array.from(algos.values());
-});
-
-// Get algorithms available for currently selected AOIs
-const availableAlgorithms = computed(() => {
-    if (selectedAoiIds.value.length === 0) return uniqueAlgorithms.value;
-    
-    const availableAlgos = new Set();
-    const selectedAois = props.allAois.filter(a => selectedAoiIds.value.includes(a.aoi_id));
-    
-    selectedAois.forEach(aoi => {
-        if (aoi.mappedAlgorithms && Array.isArray(aoi.mappedAlgorithms)) {
-            aoi.mappedAlgorithms.forEach(algo => {
-                availableAlgos.add(algo.algo_id);
-            });
-        }
-    });
-    
-    return uniqueAlgorithms.value.filter(algo => availableAlgos.has(algo.algo_id));
+    const result = Array.from(channels.values());
+    console.log('[AoiVizPanel] Available channels:', result);
+    return result;
 });
 
 // Process alerts into series data for Highcharts
 const chartSeriesData = computed(() => {
+    console.log('[AoiVizPanel] Computing chart data...', {
+        hasAlerts: props.projectAlerts?.length > 0,
+        alertCount: props.projectAlerts?.length,
+        hasAoi: !!props.selectedAoi,
+        selectedChannels: selectedChannelIds.value.length
+    });
 
     if (!props.projectAlerts || props.projectAlerts.length === 0) {
+        console.log('[AoiVizPanel] No alerts');
         return [];
     }
 
-    if (selectedAoiIds.value.length === 0 || selectedAlgoIds.value.length === 0) {
+    if (!props.selectedAoi || selectedChannelIds.value.length === 0) {
+        console.log('[AoiVizPanel] No AOI or no channels selected');
         return [];
     }
 
     const dataMap = new Map();
     
-    // Initialize series for each AOI-Algorithm combination
-    const selectedAois = props.allAois.filter(a => selectedAoiIds.value.includes(a.aoi_id));
-    const selectedAlgos = availableAlgorithms.value.filter(a => selectedAlgoIds.value.includes(a.algo_id));
+    // Initialize series for each selected channel
+    const selectedChannels = availableChannels.value.filter(ch => 
+        selectedChannelIds.value.includes(ch.channelId)
+    );
     
-    selectedAois.forEach(aoi => {
-        selectedAlgos.forEach(algo => {
-            const seriesId = `${aoi.aoi_id}_${algo.algo_id}`;
-            dataMap.set(seriesId, {
-                id: seriesId,
-                name: `${aoi.name} / ${algo.algo_id}`,
-                data: [],
-                color: algo.color,
-                aoiId: aoi.aoi_id,
-                algoId: algo.algo_id,
-                type: 'line',
-                step: 'left',
-                lineWidth: 2,
-            });
+    console.log('[AoiVizPanel] Initializing series for channels:', selectedChannels);
+    
+    selectedChannels.forEach(channel => {
+        const seriesId = `${props.selectedAoi.aoi_id}_${channel.channelId}`;
+        dataMap.set(seriesId, {
+            id: seriesId,
+            name: `${props.selectedAoi.name} / ${channel.channelName}`,
+            data: [],
+            color: channel.color,
+            aoiId: props.selectedAoi.aoi_id,
+            channelId: channel.channelId,
+            type: 'line',
+            step: 'left',
+            lineWidth: 2,
         });
     });
     
-    // Filter and process alerts
-    const filteredAlerts = props.projectAlerts.filter(alert => 
-        selectedAoiIds.value.includes(alert.aoiId) && 
-        selectedAlgoIds.value.includes(alert.algoId)
-    );
+    // Filter alerts for selected AOI and channels
+    const filteredAlerts = props.projectAlerts.filter(alert => {
+        const match = alert.aoiId === props.selectedAoi.aoi_id && 
+               selectedChannelIds.value.includes(alert.channelId);
+        if (match) {
+            console.log('[AoiVizPanel] Alert matched:', alert);
+        }
+        return match;
+    });
+    
+    console.log('[AoiVizPanel] Filtered alerts:', filteredAlerts.length);
     
     // Populate series with alert data
     filteredAlerts.forEach(alert => {
-        const seriesId = `${alert.aoiId}_${alert.algoId}`;
+        const seriesId = `${alert.aoiId}_${alert.channelId}`;
         const series = dataMap.get(seriesId);
         
         if (series) {
             const timestamp = new Date(alert.timestamp).getTime();
             
-            // Create pulse: (T-1ms, 0) -> (T, 1) -> (T+1ms, 0)
+            // Create pulse
             series.data.push([timestamp - 1, 0]);
             series.data.push({
                 x: timestamp,
@@ -138,14 +133,12 @@ const chartSeriesData = computed(() => {
     
     // Finalize series
     const allSeries = Array.from(dataMap.values()).map(series => {
-        // Sort data points
         series.data.sort((a, b) => {
             const aTime = typeof a === 'object' ? a.x : a[0];
             const bTime = typeof b === 'object' ? b.x : b[0];
             return aTime - bTime;
         });
         
-        // Add baseline points at start and end
         if (series.data.length > 0) {
             const firstTime = typeof series.data[0] === 'object' ? series.data[0].x : series.data[0][0];
             const lastTime = typeof series.data[series.data.length - 1] === 'object' 
@@ -159,24 +152,25 @@ const chartSeriesData = computed(() => {
         return series;
     });
     
-    return allSeries.filter(s => s.data.length > 2); // Only return series with actual data
+    const result = allSeries.filter(s => s.data.length > 2);
+    console.log('[AoiVizPanel] Final series count:', result.length);
+    return result;
 });
+
+
 
 // Highcharts configuration
 const chartOptions = computed(() => {
-    const minTime = props.alertTimeRange?.from - 2 * 60 * 1000 || undefined;
-  const maxTime = props.alertTimeRange?.to + 2 * 60 * 1000 || undefined;
-console.log(minTime);
-console.log(maxTime);
-    // const minTime = dateFilter.value.from ? new Date(dateFilter.value.from).getTime() : undefined;
-    // const maxTime = dateFilter.value.to ? new Date(dateFilter.value.to).getTime() : undefined;
+    const minTime = props.alertTimeRange?.from ? props.alertTimeRange.from - 1 * 60 * 1000 : undefined;
+    const maxTime = props.alertTimeRange?.to ? props.alertTimeRange.to + 1 * 60 * 1000 : undefined;
+    const chartHeight = window.innerHeight * 0.30;
     
     return {
         chart: {
             type: 'line',
             zoomType: 'x',
             backgroundColor: '#1f2937',
-            height: '',
+            height: chartHeight,
             animation: true,
         },
         title: {
@@ -186,32 +180,32 @@ console.log(maxTime);
             enabled: false
         },
         xAxis: {
-      type: 'datetime',
-      min: minTime,
-      max: maxTime,
-      title: {
-        text: 'Timeline',
-        style: { color: '#9ca3af', fontWeight: 'bold' }
-      },
-      labels: { style: { color: '#d1d5db' }, format: '{value:%e %b %H:%M}' },
-      gridLineColor: '#374151'
-    },
+            type: 'datetime',
+            min: minTime,
+            max: maxTime,
+            title: {
+                text: 'Timeline',
+                style: { color: '#9ca3af', fontWeight: 'bold' }
+            },
+            labels: { style: { color: '#d1d5db' }, format: '{value:%e %b %H:%M}' },
+            gridLineColor: '#374151'
+        },
         yAxis: {
-      title: {
-        text: 'Alert Status',
-        style: { color: '#9ca3af', fontWeight: 'bold' }
-      },
-      labels: {
-        style: { color: '#d1d5db' },
-        formatter: function () {
-          return this.value === 1 ? 'Yes' : 'No';
-        }
-      },
-      min: 0,
-      max: 1.5,
-      tickPositions: [0, 1],
-      gridLineColor: '#374151'
-    },
+            title: {
+                text: 'Alert Status',
+                style: { color: '#9ca3af', fontWeight: 'bold' }
+            },
+            labels: {
+                style: { color: '#d1d5db' },
+                formatter: function () {
+                    return this.value === 1 ? 'Yes' : 'No';
+                }
+            },
+            min: 0,
+            max: 1.5,
+            tickPositions: [0, 1],
+            gridLineColor: '#374151'
+        },
         tooltip: {
             backgroundColor: '#111827',
             borderColor: '#4b5563',
@@ -274,39 +268,14 @@ console.log(maxTime);
 
 // --- ACTIONS ---
 
-const applyFilters = () => {
-    if (!dateFilter.value.from || !dateFilter.value.to) {
-        alert('Please select both start and end dates');
-        return;
-    }
-    
-    const from = new Date(dateFilter.value.from).toISOString();
-    const to = new Date(dateFilter.value.to).toISOString();
-    emit('refetch-alerts', props.projectId, selectedAoiIds.value);
-
-};
-
-const toggleAoiSelection = (aoiId) => {
-    const index = selectedAoiIds.value.indexOf(aoiId);
+const toggleChannelSelection = (channelId) => {
+    const index = selectedChannelIds.value.indexOf(channelId);
     if (index > -1) {
-        selectedAoiIds.value.splice(index, 1);
+        selectedChannelIds.value.splice(index, 1);
     } else {
-        selectedAoiIds.value.push(aoiId);
+        selectedChannelIds.value.push(channelId);
     }
-    
-    // Auto-adjust algorithm selection based on available algorithms
-    selectedAlgoIds.value = selectedAlgoIds.value.filter(algoId => 
-        availableAlgorithms.value.some(a => a.algo_id === algoId)
-    );
-};
-
-const toggleAlgoSelection = (algoId) => {
-    const index = selectedAlgoIds.value.indexOf(algoId);
-    if (index > -1) {
-        selectedAlgoIds.value.splice(index, 1);
-    } else {
-        selectedAlgoIds.value.push(algoId);
-    }
+    console.log('[AoiVizPanel] Selected channels:', selectedChannelIds.value);
 };
 
 const handlePointClick = (alertDetails) => {
@@ -314,29 +283,26 @@ const handlePointClick = (alertDetails) => {
     showAlertModal.value = true;
 };
 
-const selectAllAois = () => {
-    selectedAoiIds.value = props.allAois.map(a => a.aoi_id);
+const selectAllChannels = () => {
+    selectedChannelIds.value = availableChannels.value.map(ch => ch.channelId);
 };
 
-const deselectAllAois = () => {
-    selectedAoiIds.value = [];
-};
-
-const selectAllAlgos = () => {
-    selectedAlgoIds.value = availableAlgorithms.value.map(a => a.algo_id);
-};
-
-const deselectAllAlgos = () => {
-    selectedAlgoIds.value = [];
+const deselectAllChannels = () => {
+    selectedChannelIds.value = [];
 };
 
 // Chart management
 const updateChart = () => {
-    if (!props.isVisible || !chartElement.value) return;
+    if (!props.isVisible || !chartElement.value) {
+        console.log('[AoiVizPanel] Skipping chart update - not visible or no element');
+        return;
+    }
     
     isLoadingChart.value = true;
     
     setTimeout(() => {
+        console.log('[AoiVizPanel] Updating chart with series count:', chartSeriesData.value.length);
+        
         if (chartSeriesData.value.length > 0) {
             if (chartInstance) {
                 chartInstance.update(chartOptions.value, true, true);
@@ -361,21 +327,7 @@ const destroyChart = () => {
 // --- LIFECYCLE ---
 
 onMounted(() => {
-    // Set default date range (last 7 days)
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-    
-    dateFilter.value.from = sevenDaysAgo.toISOString().split('T')[0];
-    dateFilter.value.to = now.toISOString().split('T')[0];
-    
-    // Initialize selections
-    if (props.allAois.length > 0) {
-        selectedAoiIds.value = props.allAois.map(a => a.aoi_id);
-    }
-    
-    if (uniqueAlgorithms.value.length > 0) {
-        selectedAlgoIds.value = uniqueAlgorithms.value.map(a => a.algo_id);
-    }
+    console.log('[AoiVizPanel] Mounted');
 });
 
 onBeforeUnmount(() => {
@@ -384,6 +336,7 @@ onBeforeUnmount(() => {
 
 // Watch for changes
 watch(() => props.isVisible, (newVal) => {
+    console.log('[AoiVizPanel] Visibility changed:', newVal);
     if (!newVal) {
         destroyChart();
     } else {
@@ -391,31 +344,41 @@ watch(() => props.isVisible, (newVal) => {
     }
 });
 
-watch([selectedAoiIds, selectedAlgoIds], () => {
-  if (props.isVisible) {
-    updateChart();
-  }
-}, { deep: true });
-
-watch([() => props.projectAlerts, () => props.alertTimeRange], () => {
-  if (props.isVisible) updateChart();
-}, { deep: true });
-
-watch([chartSeriesData, () => props.isVisible], () => {
+watch([selectedChannelIds], () => {
+    console.log('[AoiVizPanel] Selected channels changed');
     if (props.isVisible) {
         updateChart();
     }
 }, { deep: true });
 
-watch(() => props.allAois, (newAois) => {
-    if (newAois.length > 0 && selectedAoiIds.value.length === 0) {
-        selectedAoiIds.value = newAois.map(a => a.aoi_id);
-    }
-}, { immediate: true });
+watch([() => props.projectAlerts, () => props.alertTimeRange], () => {
+    console.log('[AoiVizPanel] Alerts or time range changed');
+    if (props.isVisible) updateChart();
+}, { deep: true });
 
-watch(uniqueAlgorithms, (newAlgos) => {
-    if (newAlgos.length > 0 && selectedAlgoIds.value.length === 0) {
-        selectedAlgoIds.value = newAlgos.map(a => a.algo_id);
+watch([chartSeriesData, () => props.isVisible], () => {
+    console.log('[AoiVizPanel] Chart data or visibility changed');
+    if (props.isVisible) {
+        updateChart();
+    }
+}, { deep: true });
+
+watch(() => props.selectedAoi, (newAoi) => {
+    console.log('[AoiVizPanel] Selected AOI changed:', newAoi);
+    if (newAoi) {
+        selectedChannelIds.value = availableChannels.value.map(ch => ch.channelId);
+        console.log('[AoiVizPanel] Auto-selected channels:', selectedChannelIds.value);
+        if (props.isVisible) {
+            updateChart();
+        }
+    }
+}, { immediate: true, deep: true });
+
+watch(availableChannels, (newChannels) => {
+    console.log('[AoiVizPanel] Available channels changed:', newChannels);
+    if (newChannels.length > 0 && selectedChannelIds.value.length === 0) {
+        selectedChannelIds.value = newChannels.map(ch => ch.channelId);
+        console.log('[AoiVizPanel] Auto-selected channels:', selectedChannelIds.value);
     }
 }, { immediate: true });
 </script>
@@ -423,60 +386,41 @@ watch(uniqueAlgorithms, (newAlgos) => {
 <template>
     <div v-if="isVisible" 
          class="fixed bottom-0 left-0 right-0 bg-gray-800 shadow-2xl border-t-4 border-cyan-500 transition-all duration-300"
-         style="height: 40vh; min-height: 400px;">
+         style=" z-index: 1000;">
         
         <!-- Close Button -->
         <button @click="$emit('close')" 
-                class="absolute top-0 right-0 text-red-400 hover:text-red-300 text-3xl font-bold z-20 w-8 h-8 flex items-center justify-center"
+                class="absolute top-2 right-2 text-red-400 hover:text-red-300 text-3xl font-bold z-20 w-8 h-8 flex items-center justify-center"
                 title="Close Panel">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2"/>
-  <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2"/>
-</svg>
+                <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2"/>
+                <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2"/>
+            </svg>
         </button>
 
         <!-- Main Content -->
-        <div class="flex flex-col h-[44vh] p-2 overflow-y-auto">
-            
-            <!-- Controls Section -->
-             <div class="flex-shrink-0 pd-1 h-[5vh] flex-column">
-                <div class="flex justify-between items-center">
-                        <label class="text-gray-300 text-sm font-semibold">Select AOIs:</label>
-                        
-                </div>
-                <div class="flex flex-wrap gap-1 overflow-y-auto">
-                        <label v-for="aoi in allAois" 
-                               :key="aoi.aoi_id"
-                               class="flex items-center space-x-1 text-sm text-gray-300 cursor-pointer hover:text-white px-2 rounded-full transition-colors">
-                            <input type="checkbox" 
-                                   :value="aoi.aoi_id" 
-                                   :checked="selectedAoiIds.includes(aoi.aoi_id)"
-                                   @change="toggleAoiSelection(aoi.aoi_id)"
-                                   class="rounded text-cyan-500 bg-gray-700 border-gray-600 focus:ring-cyan-500">
-                            <span class="truncate">{{ aoi.name }}</span>
-                        </label>
-                </div>
-                
-
-                
-                <!-- Date Filter Row -->
-                
+        <div class="flex flex-col">
+            <!-- AOI Title -->
+            <div v-if="selectedAoi" class="flex-shrink-0 h-[6vh] bg-gray-700 rounded-lg p-2">
+                <h3 class="text-cyan-400 font-bold text-lg">
+                    {{ selectedAoi.name }}
+                </h3>
             </div>
 
             <!-- Chart Area -->
-            <div class="flex-grow min-h-0 h-[29vh] mb-1 bg-gray-900 rounded-lg p-1 relative">
+            <div class=" bg-gray-900 rounded-lg p-2 h-[32vh] relative overflow-hidden">
                 <div v-if="isLoadingChart" 
-                     class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-10">
+                     class=" inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-10">
                     <div class="text-cyan-400 text-lg">Loading chart...</div>
                 </div>
                 
                 <div ref="chartElement" 
                      v-show="chartSeriesData.length > 0 && !isLoadingChart"
-                     class="w-full h-full">
+                     class="w-full h-[30vh]">
                 </div>
                 
                 <div v-if="!isLoadingChart && chartSeriesData.length === 0" 
-                     class="flex items-center justify-center text-gray-400 text-center">
+                     class="flex items-center justify-center text-gray-400 text-center h-[32vh]">
                     <div>
                         <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -485,42 +429,33 @@ watch(uniqueAlgorithms, (newAlgos) => {
                         </svg>
                         <p class="text-lg font-semibold">No Data to Display</p>
                         <p class="text-sm mt-2">
-                            {{ props.projectAlerts.length === 0 
-                                ? 'No alerts found for this project' 
-                                : 'Select AOIs and Algorithms to view alerts' }}
+                            {{ projectAlerts.length === 0 
+                                ? 'No alerts found for this AOI' 
+                                : 'Select alert channels to view alerts' }}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Algorithm Legend -->
-            <div class="flex-shrink-0 bg-gray-700 h-[8vh] mb-3 rounded-lg p-1">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="text-gray-300 text-sm font-semibold">Algorithms:</label>
-                    <!-- <div class="flex gap-2">
-                        <button @click="selectAllAlgos" 
-                                class="text-xs bg-cyan-600 hover:bg-cyan-700 text-white px-2 py-1 rounded">
-                            All
-                        </button>
-                        <button @click="deselectAllAlgos" 
-                                class="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded">
-                            None
-                        </button>
-                    </div> -->
+            <!-- Alert Channel Legend -->
+            <div class="flex-shrink-0 bg-gray-700 h-[10vh] my-1 rounded-lg p-2 max-h-[120px] overflow-hidden flex flex-col">
+                <div class="flex justify-between h-[2vh] items-center">
+                    <label class="text-gray-300 text-sm font-semibold">Alert Channels:</label>
                 </div>
-                <div class="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
-                    <label v-for="algo in availableAlgorithms" 
-                           :key="algo.algo_id"
-                           class="flex items-center space-x-2 text-sm cursor-pointer transition-all"
-                           :class="selectedAlgoIds.includes(algo.algo_id) ? 'text-white' : 'text-gray-400'"
-                           :title="algo.description">
+                <div class="flex h-[6vhv] p-2 flex-wrap gap-2 overflow-y-auto">
+                    <label v-for="channel in availableChannels" 
+                           :key="channel.channelId"
+                           class="flex items-center space-x-2 text-xs cursor-pointer transition-all px-2 py-1 bg-gray-600 rounded whitespace-nowrap"
+                           :class="selectedChannelIds.includes(channel.channelId) ? 'text-white ring-2 ring-cyan-500' : 'text-gray-400'"
+                           :title="`${channel.category} - ${channel.channelName}`">
                         <input type="checkbox" 
-                               :value="algo.algo_id" 
-                               :checked="selectedAlgoIds.includes(algo.algo_id)"
-                               @change="toggleAlgoSelection(algo.algo_id)"
+                               :value="channel.channelId" 
+                               :checked="selectedChannelIds.includes(channel.channelId)"
+                               @change="toggleChannelSelection(channel.channelId)"
                                class="rounded text-cyan-500 bg-gray-700 border-gray-600 focus:ring-cyan-500">
-                        <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: algo.color }"></div>
-                        <span class="font-medium">{{ algo.algo_id }}</span>
+                        <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: channel.color }"></div>
+                        <span class="font-medium">{{ channel.channelName }}</span>
+                        <!-- <span class="text-gray-500">({{ channel.category }})</span> -->
                     </label>
                 </div>
             </div>
@@ -534,7 +469,7 @@ watch(uniqueAlgorithms, (newAlgos) => {
         <div class="bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl relative border-2 border-cyan-500 max-h-[80vh] overflow-y-auto">
             <button @click="showAlertModal = false" 
                     class="absolute top-3 right-3 text-red-400 hover:text-red-300 text-3xl font-bold">
-                &times;
+                Close
             </button>
             
             <h3 class="text-2xl text-white font-bold mb-4 border-b border-gray-700 pb-3">
@@ -546,15 +481,15 @@ watch(uniqueAlgorithms, (newAlgos) => {
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="text-gray-400 text-sm">Project</p>
-                            <p class="text-white font-semibold">{{ currentAlertDetails.project_name }}</p>
+                            <p class="text-white font-semibold">{{ currentAlertDetails.projectName }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 text-sm">AOI</p>
-                            <p class="text-white font-semibold">{{ currentAlertDetails.aoi_name }}</p>
+                            <p class="text-white font-semibold">{{ currentAlertDetails.aoiName }}</p>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-sm">Algorithm</p>
-                            <p class="text-cyan-400 font-semibold">{{ currentAlertDetails.algoId }}</p>
+                            <p class="text-gray-400 text-sm">Alert Channel</p>
+                            <p class="text-cyan-400 font-semibold">{{ currentAlertDetails.channelName }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 text-sm">Timestamp</p>
@@ -566,21 +501,20 @@ watch(uniqueAlgorithms, (newAlgos) => {
                 </div>
                 
                 <div class="bg-gray-900 p-4 rounded-lg">
-                    <p class="text-gray-400 text-sm mb-2">Alert Message:</p>
+                    <p class="text-gray-400 text-sm mb-2">Alert Content:</p>
                     <pre class="bg-gray-800 p-3 rounded text-sm text-yellow-300 whitespace-pre-wrap overflow-x-auto">{{ JSON.stringify(currentAlertDetails.message, null, 2) }}</pre>
                 </div>
             </div>
             
-            <button @click="showAlertModal = false" 
+            <!-- <button @click="showAlertModal = false" 
                     class="mt-6 w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-lg font-semibold">
                 Close
-            </button>
+            </button> -->
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Custom scrollbar styling */
 .overflow-y-auto::-webkit-scrollbar {
     width: 6px;
     height: 6px;

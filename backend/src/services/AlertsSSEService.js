@@ -63,20 +63,15 @@ function sendToSSEClient(userId, notification) {
  */
 async function runKafkaConsumer() {
     try {
-        await redisClient.connect(); // Connect to Redis database
+        await redisClient.connect();
 
         await consumer.connect();
-        // Subscribe to the alerts topic, start from where we left off (not from the beginning)
         await consumer.subscribe({ topic: KAFKA_TOPIC, fromBeginning: false });
 
         await consumer.run({
-            // Function executed for every new message received from Kafka
             eachMessage: async ({ topic, partition, message }) => {
                 const messageValue = message.value?.toString();
                 if (!messageValue) return;
-
-
-
 
                 try {
                     const data = JSON.parse(messageValue);
@@ -87,38 +82,57 @@ async function runKafkaConsumer() {
                     }
 
                     // --- CORE LOGIC: Fetch all users' contact details for the project ---
-                    const mappingId = payload.mapping_id; // CRITICAL: Use the new mapping_id column
+                    const subscriptionId = payload.subscription_id; // CHANGED: Use subscription_id
 
-                    // Step 1: Fetch Project ID, AOI ID, and Algo ID from aoi_algorithm_mapping
-                    const mappingResult = await db.query(
-                        `SELECT project_id, aoi_id, change_algo_id FROM aoi_algorithm_mapping WHERE id = $1`,
-                        [mappingId]
-                    );
-                    if (mappingResult.rows.length === 0) {
-                        console.log(`CDC: Mapping ID ${mappingId} not found. Skipping alert.`);
+                    // Step 1: Fetch Project ID, AOI ID, and Channel ID from the subscription table
+                    // NOTE: We assume 'change_algo_id' or equivalent is stored in the subscription's auxdata
+                    // or we omit it for now, as it's not directly in the subscription table schema.
+                    // For now, let's join to the subscription table.
+                    const subscriptionResult = await db.query(
+    `SELECT project_id, aoi_id, channel_id, user_ids 
+     FROM subscription WHERE id = $1`,
+    [subscriptionId]
+);
+                    if (subscriptionResult.rows.length === 0) {
+                        console.log(`CDC: Subscription ID ${subscriptionId} not found. Skipping alert.`);
                         return;
                     }
-                    const { project_id, aoi_id, change_algo_id } = mappingResult.rows[0];
+                    // CHANGED: Destructure subscription fields
+const { project_id, aoi_id, channel_id, user_ids } = subscriptionResult.rows[0];
 
+                    // Step 1b: Fetch project and AOI names, and also the channel name/details
+                    // NOTE: The 'algo_id' is now the 'channel_id' for simplicity based on the logic flow.
                     const projectDetails = await db.query(
-                        `SELECT p.name AS project_name, aoi.name AS aoi_name 
-                         FROM project p, area_of_interest aoi
-                         WHERE p.id = $1 AND aoi.project_id = $1 AND aoi.aoi_id = $2`,
-                        [project_id, aoi_id] // Use project_id and aoi_id from mapping result
+                        `SELECT p.name AS project_name, aoi.name AS aoi_name, acc.channel_name
+                         FROM project p, area_of_interest aoi, alert_channel_catalogue acc
+                         WHERE p.id = $1 
+                         AND aoi.project_id = $1 AND aoi.aoi_id = $2
+                         AND acc.id = $3`,
+                        [project_id, aoi_id, channel_id] // CHANGED: Use channel_id
                     );
 
                     const project_name = projectDetails.rows[0]?.project_name || `Project ${project_id}`;
                     const aoi_name = projectDetails.rows[0]?.aoi_name || `AOI ${aoi_id}`;
+                    const channel_name = projectDetails.rows[0]?.channel_name || `Channel ${channel_id}`; // NEW
 
+
+                    
+// Then fetch user details only for subscribed users
+const usersResult = await db.query(
+    `SELECT u.user_id, u.email, u.contactno 
+     FROM users u
+     WHERE u.user_id = ANY($1)`,
+    [user_ids]  // Use the subscription's user_ids array
+);
 
                     // Step 2: Fetch all users (with contact details) associated with the project
-                    const usersResult = await db.query(
-                        `SELECT u.user_id, u.email, u.contactno 
-                         FROM users_to_project up
-                         JOIN users u ON up.user_id = u.user_id
-                         WHERE up.project_id = $1`,
-                        [project_id] // Use the retrieved project_id
-                    );
+                    // const usersResult = await db.query(
+                    //     `SELECT u.user_id, u.email, u.contactno 
+                    //      FROM users_to_project up
+                    //      JOIN users u ON up.user_id = u.user_id
+                    //      WHERE up.project_id = $1`,
+                    //     [project_id]
+                    // );
 
                     const recipientUsers = usersResult.rows;
 
@@ -130,15 +144,15 @@ async function runKafkaConsumer() {
                     // Structure the alert data for the frontend notification dropdown
                     const notification = {
                         id: payload.id,
-                        message: payload.message,
+                        message: payload.content,
                         projectId: project_id,
-                        aoiId: aoi_id, // Use the retrieved aoi_id
-                        algoId: change_algo_id, // Use the retrieved algo_id
+                        aoiId: aoi_id,
+                        channelId: channel_id,        // ADD: Numeric ID
+                        channelName: channel_name,    // CHANGE: Use consistent naming
                         timestamp: payload.alert_timestamp,
-                        project_name: project_name, // NEW
-                        aoi_name: aoi_name,         // NEW
-                        title: `${project_name}: ${aoi_name} has an Alert for ${change_algo_id}`, // UPDATED
-                        // title: `Project Alert: ${project_id} (${change_algo_id})`,
+                        project_name: project_name,
+                        aoi_name: aoi_name,
+                        title: `${project_name}: ${aoi_name} via ${channel_name} alert`,
                     };
 
                     // Process the alert for each recipient user
@@ -164,9 +178,6 @@ async function runKafkaConsumer() {
                 } catch (err) {
                     console.error('Error processing Kafka message:', err);
                 }
-
-
-
             },
         });
         console.log('⚡️ AlertsSSEService: Kafka consumer is running.');
@@ -174,6 +185,7 @@ async function runKafkaConsumer() {
         console.error('🚨 AlertsSSEService: Kafka or Redis connection failed:', error);
     }
 }
+
 
 /**
  * Initializes the entire real-time alert system by setting up

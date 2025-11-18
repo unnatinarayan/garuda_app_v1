@@ -1,6 +1,4 @@
 // UserSession.js 
-
-
 import { ApiClient } from '../api/ApiClient.js';
 
 /**
