@@ -146,17 +146,17 @@ const handleDelete = async (projectId, projectName) => {
 };
 </script>
 <template>
-    <div id="manage-view" class="h-[81vh] pt-4 text-white flex-col justify-start bg-gray-900">
-        <div class="sticky top-0 z-10 w-full p-3 shadow-2xl flex justify-center items-center mb-4"
+    <div id="manage-view" class="h-[85vh] text-white flex-col justify-start bg-gray-900">
+        <div class="sticky top-0 z-10 w-full p-3 shadow-2xl flex justify-center items-center"
             :class="{ 'bg-orange-600/90': !isMonitorMode, 'bg-[#b49400]/90': isMonitorMode }">
             <h1 class="text-3xl font-extrabold text-white tracking-wide">
                 {{ isMonitorMode ? 'Monitor Projects' : 'Manage Projects' }}
             </h1>
         </div>
 
-        <div class="w-full max-w-4xl mx-auto px-4 relative">
+        <div class="w-full max-w-4xl h-[80vh] pb-2 mx-auto px-4 relative">
             
-            <div class="flex items-center mb-6 gap-3 p-2 rounded-xl shadow-lg">
+            <div class="flex items-center mb-2 gap-3 p-2 rounded-xl shadow-lg">
 
                 <div class="relative flex-1">
                     <input type="text" v-model="searchTerm" placeholder="Search projects by Name or Description..."
@@ -182,7 +182,7 @@ const handleDelete = async (projectId, projectName) => {
 
                 <div class="relative flex-shrink-0">
                     <button @click="toggleSortDropdown"
-                        class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 
+                        class="flex items-center gap-2 px-3 bg-gray-700 hover:bg-gray-600 
                                border border-gray-600 rounded-xl text-white transition duration-200 text-sm h-10"
                         title="Sort Options">
                         
@@ -243,7 +243,7 @@ const handleDelete = async (projectId, projectName) => {
             </div>
 
 
-            <div class="space-y-3 h-[67vh] overflow-y-auto pr-3">
+            <div class="space-y-2 h-[70vh] overflow-y-auto pr-3">
                 <p v-if="isLoading" class="text-center py-8 text-gray-400">Loading projects...</p>
                 <p v-else-if="errorMessage" class="text-center py-8 text-red-500 font-medium">{{ errorMessage }}</p>
                 <p v-else-if="filteredProjects.length === 0" class="text-center py-8 text-gray-400 text-lg">

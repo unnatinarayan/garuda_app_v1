@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
                 <!-- Close Button -->
                 <button 
                     @click="closeProfile"
-                    class="absolute top-3 right-3 text-red-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors z-10">
+                    class="absolute top-3 right-3 bg-red-600 p-2 text-white hover:text-white text-2xl font-bold flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors z-10">
                     Close
                 </button>
 

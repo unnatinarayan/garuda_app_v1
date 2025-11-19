@@ -108,12 +108,14 @@ const initializeMap = () => {
     }
 
     map.value = L.map(mapDiv.value, {
-        attributionControl: false
+        attributionControl: false,
+        dragging: true
     });
 
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: false,
-        maxZoom: 19
+        maxZoom: 19,
+        
     });
 
     const baseLayers = { 'OpenStreetMap': osmLayer };

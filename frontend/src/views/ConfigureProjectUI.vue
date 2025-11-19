@@ -155,23 +155,23 @@ const canSubmit = computed(() => {
 
 <template>
     <div class="w-full h-[12vh] pt-0 p-0.5 bg-gray-700 shadow-lg border-b border-gray-600 z-[8]">
-        <div class="w-full h-[4vh] max-w-6xl mx-auto flex justify-center items-center"
+        <div class="w-full h-[4.4vh] max-w-6xl mx-auto mb-1 flex justify-center items-center"
             :class="{ 'bg-orange-600 text-white': isUpdateMode, 'bg-blue-600 text-white': !isUpdateMode }">
-            <h1 class="text-2xl sm:text-2xl font-bold w-full truncate max-w-[70%]">
+            <h1 class="text-2xl sm:text-2xl font-bold w-full p-2 truncate max-w-[70%]">
                 {{ isUpdateMode ? '' : 'Add New Project' }}
                 <span v-if="projectName && isUpdateMode" class="">{{ projectName }}</span>
             </h1>
         </div>
 
-        <div class="relative mb-2 w-full h-[7.5vh] pt-1 px-4 sm:px-6 md:px-8">
-            <div class="absolute top-[2vh] left-0 right-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12"
+        <div class="relative mb-2 w-full h-[8vh] pt-1 px-4 sm:px-6 md:px-8">
+            <div class="absolute top-[2.5vh] left-0 right-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12"
                 :class="{
                     'bg-green-600': isUpdateMode,
                     'bg-gray-700': !isUpdateMode
                 }">
             </div>
 
-            <div class="absolute top-[2vh] left-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12 bg-green-600"
+            <div class="absolute top-[2.5vh] left-0 h-0.5 z-0 transition-all duration-500 mx-8 sm:mx-10 md:mx-12 bg-green-600"
                 :style="{ width: progressWidth }">
             </div>
 
